@@ -1,4 +1,4 @@
-const she = require('./index.js')
+const she = require('./she.js')
 
 she.init(() => {
 	let sec = new she.SecretKey()
