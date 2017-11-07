@@ -1,0 +1,24 @@
+{
+  "name": "she-wasm",
+  "version": "0.0.1",
+  "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
+  "main": "she.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/herumi/she-wasm.git"
+  },
+  "keywords": [
+    "homomorphic encrpytion",
+    "WebAssembly",
+    "pairing"
+  ],
+  "author": "herumi <herumi@nifty.com> (https://github.com/herumi/)",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/herumi/she-wasm/issues"
+  },
+  "homepage": "https://github.com/herumi/she-wasm#readme"
+}
