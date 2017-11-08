@@ -1,9 +1,10 @@
 const she = require('./she.js')
 const assert = require('assert')
 
-she.init(() => {
-  minimumTest()
-})
+she.init()
+  .then(() => {
+    minimumTest()
+  })
 
 function minimumTest() {
   const sec = new she.SecretKey()
