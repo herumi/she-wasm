@@ -37,10 +37,13 @@ function encDecTest() {
   for (let m = -3; m < 3; m++) {
     const c1 = pub.encG1(m)
     assert.equal(sec.dec(c1), m)
+    assert.equal(sec.isZero(c1), m == 0)
     const c2 = pub.encG2(m)
     assert.equal(sec.dec(c2), m)
+    assert.equal(sec.isZero(c2), m == 0)
     const ct = pub.encGT(m)
     assert.equal(sec.dec(ct), m)
+    assert.equal(sec.isZero(ct), m == 0)
   }
 }
 
