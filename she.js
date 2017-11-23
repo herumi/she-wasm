@@ -1,4 +1,5 @@
 (function(generator) {
+  "use strict"
   if (typeof exports === 'object') {
     exports.mod = require('./she_c.js')
     generator(exports, true)

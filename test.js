@@ -1,3 +1,4 @@
+"use strict"
 const she = require('./she.js')
 const assert = require('assert')
 
