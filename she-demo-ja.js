@@ -115,8 +115,8 @@ function send() {
 function mul() {
 	$('.encG1xS').each(function() {
 		const o = $(this)
-		const c1 = she.deserializeCipherTextG1FromHexStr(o.text())
-		const c2 = she.deserializeCipherTextG2FromHexStr(o.next().text())
+		const c1 = she.deserializeHexStrToCipherTextG1(o.text())
+		const c2 = she.deserializeHexStrToCipherTextG2(o.next().text())
 		const ct = she.mul(c1, c2)
 		o.next().next().text(ct.serializeToHexStr())
 	})
@@ -126,7 +126,7 @@ function sum() {
 	let csum = pub.encGT(0)
 	$('.encGTxyS').each(function() {
 		const s = $(this).text()
-		const ct = she.deserializeCipherTextGTFromHexStr(s)
+		const ct = she.deserializeHexStrToCipherTextGT(s)
 		csum = she.add(csum, ct)
 	})
 	setText('encSumS', csum.serializeToHexStr())
@@ -143,7 +143,7 @@ function recv() {
 
 function dec() {
 	const s = getText('encSumC')
-	const ct = she.deserializeCipherTextGTFromHexStr(s)
+	const ct = she.deserializeHexStrToCipherTextGT(s)
 	const v = sec.dec(ct)
 	setText('ret', v)
 }

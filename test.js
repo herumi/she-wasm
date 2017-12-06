@@ -51,7 +51,7 @@ function encDecTest() {
 function serializeSubTest(t, cstr) {
   const s = t.serializeToHexStr()
   const t2 = new cstr()
-  t2.deserializeFromHexStr(s)
+  t2.deserializeHexStr(s)
   assert.deepEqual(t.serialize(), t2.serialize())
 }
 

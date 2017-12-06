@@ -254,7 +254,7 @@
       constructor(size) {
         this.a_ = new Uint32Array(size / 4)
       }
-      deserializeFromHexStr(s) {
+      deserializeHexStr(s) {
         this.deserialize(exports.fromHexStr(s))
       }
       serializeToHexStr() {
@@ -320,9 +320,9 @@
       }
     }
 
-    exports.deserializeSecretKeyFromHexStr = function(s) {
+    exports.deserializeHexStrToSecretKey = function(s) {
       r = new exports.SecretKey()
-      r.deserializeFromHexStr(s)
+      r.deserializeHexStr(s)
       return r
     }
     exports.PublicKey = class extends Common {
@@ -371,9 +371,9 @@
       }
     }
 
-    exports.deserializePublicKeyFromHexStr = function(s) {
+    exports.deserializeHexStrToPublicKey = function(s) {
       r = new exports.PublicKey()
-      r.deserializeFromHexStr(s)
+      r.deserializeHexStr(s)
       return r
     }
     exports.CipherTextG1 = class extends Common {
@@ -388,9 +388,9 @@
       }
     }
 
-    exports.deserializeCipherTextG1FromHexStr = function(s) {
+    exports.deserializeHexStrToCipherTextG1 = function(s) {
       r = new exports.CipherTextG1()
-      r.deserializeFromHexStr(s)
+      r.deserializeHexStr(s)
       return r
     }
     exports.CipherTextG2 = class extends Common {
@@ -405,9 +405,9 @@
       }
     }
 
-    exports.deserializeCipherTextG2FromHexStr = function(s) {
+    exports.deserializeHexStrToCipherTextG2 = function(s) {
       r = new exports.CipherTextG2()
-      r.deserializeFromHexStr(s)
+      r.deserializeHexStr(s)
       return r
     }
 
@@ -423,9 +423,9 @@
       }
     }
 
-    exports.deserializeCipherTextGTFromHexStr = function(s) {
+    exports.deserializeHexStrToCipherTextGT = function(s) {
       r = new exports.CipherTextGT()
-      r.deserializeFromHexStr(s)
+      r.deserializeHexStr(s)
       return r
     }
     // return x + y
