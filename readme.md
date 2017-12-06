@@ -2,7 +2,7 @@
 
 # Abstract
 
-see [mcl](https://github.com/herumi/mcl) and [she demo on browser](https://herumi.github.io/mcl/demo/she2.html)
+see [mcl](https://github.com/herumi/mcl) and [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
 
 # for Node.js
 node test.js
