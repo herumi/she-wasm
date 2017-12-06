@@ -49,9 +49,9 @@ function encDecTest() {
 }
 
 function serializeSubTest(t, cstr) {
-  const s = t.toHexStr()
+  const s = t.serializeToHexStr()
   const t2 = new cstr()
-  t2.fromHexStr(s)
+  t2.deserializeFromHexStr(s)
   assert.deepEqual(t.serialize(), t2.serialize())
 }
 
@@ -71,9 +71,9 @@ function serializeTest() {
 }
 
 function rerandSubTest(c, sec, pub, m) {
-  const s1 = c.toHexStr()
+  const s1 = c.serializeToHexStr()
   pub.reRand(c)
-  const s2 = c.toHexStr()
+  const s2 = c.serializeToHexStr()
   assert(s1 != s2)
   assert.equal(sec.dec(c), m)
 }

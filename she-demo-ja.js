@@ -11,9 +11,9 @@ she.init(256)
     setText('status', 'OK')
     sec = new she.SecretKey()
     sec.setByCSPRNG()
-    setText('sec', sec.toHexStr())
+    setText('sec', sec.serializeToHexStr())
     pub = sec.getPublicKey()
-    setText('pub', pub.toHexStr())
+    setText('pub', pub.serializeToHexStr())
   })
 
 function bench(label, count, func) {
@@ -53,9 +53,9 @@ function appendXY(x, y) {
 		).append(
 			$('<td>').text(y)
 		).append(
-			$('<td class="encG1x">').text(c1.toHexStr())
+			$('<td class="encG1x">').text(c1.serializeToHexStr())
 		).append(
-			$('<td class="encG2y">').text(c2.toHexStr())
+			$('<td class="encG2y">').text(c2.serializeToHexStr())
 		)
 	)
 }
@@ -115,10 +115,10 @@ function send() {
 function mul() {
 	$('.encG1xS').each(function() {
 		const o = $(this)
-		const c1 = she.getCipherTextG1FromHexStr(o.text())
-		const c2 = she.getCipherTextG2FromHexStr(o.next().text())
+		const c1 = she.deserializeCipherTextG1FromHexStr(o.text())
+		const c2 = she.deserializeCipherTextG2FromHexStr(o.next().text())
 		const ct = she.mul(c1, c2)
-		o.next().next().text(ct.toHexStr())
+		o.next().next().text(ct.serializeToHexStr())
 	})
 }
 
@@ -126,10 +126,10 @@ function sum() {
 	let csum = pub.encGT(0)
 	$('.encGTxyS').each(function() {
 		const s = $(this).text()
-		const ct = she.getCipherTextGTFromHexStr(s)
+		const ct = she.deserializeCipherTextGTFromHexStr(s)
 		csum = she.add(csum, ct)
 	})
-	setText('encSumS', csum.toHexStr())
+	setText('encSumS', csum.serializeToHexStr())
 }
 
 function mul_sum() {
@@ -143,7 +143,7 @@ function recv() {
 
 function dec() {
 	const s = getText('encSumC')
-	const ct = she.getCipherTextGTFromHexStr(s)
+	const ct = she.deserializeCipherTextGTFromHexStr(s)
 	const v = sec.dec(ct)
 	setText('ret', v)
 }

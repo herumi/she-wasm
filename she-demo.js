@@ -30,9 +30,9 @@ function append() {
 		).append(
 			$('<td>').text(y)
 		).append(
-			$('<td class="encG1x">').text(c1.toHexStr())
+			$('<td class="encG1x">').text(c1.serializeToHexStr())
 		).append(
-			$('<td class="encG2y">').text(c2.toHexStr())
+			$('<td class="encG2y">').text(c2.serializeToHexStr())
 		)
 	)
 }
@@ -76,10 +76,10 @@ function send() {
 function mul() {
 	$('.encG1xS').each(function() {
 		let o = $(this)
-		let c1 = she.getCipherTextG1FromHexStr(o.text())
-		let c2 = she.getCipherTextG2FromHexStr(o.next().text())
+		let c1 = she.deserializeCipherTextG1FromHexStr(o.text())
+		let c2 = she.deserializeCipherTextG2FromHexStr(o.next().text())
 		let ct = she.mul(c1, c2)
-		o.next().next().text(ct.toHexStr())
+		o.next().next().text(ct.serializeToHexStr())
 	})
 }
 
@@ -87,10 +87,10 @@ function sum() {
 	let csum = pub.encGT(0)
 	$('.encGTxyS').each(function() {
 		let s = $(this).text()
-		let ct = she.getCipherTextGTFromHexStr(s)
+		let ct = she.deserializeCipherTextGTFromHexStr(s)
 		csum = she.add(csum, ct)
 	})
-	setText('encSumS', csum.toHexStr())
+	setText('encSumS', csum.serializeToHexStr())
 }
 
 function recv() {
@@ -99,7 +99,7 @@ function recv() {
 
 function dec() {
 	let s = getText('encSumC')
-	let ct = she.getCipherTextGTFromHexStr(s)
+	let ct = she.deserializeCipherTextGTFromHexStr(s)
 	let v = sec.dec(ct)
 	setText('ret', v)
 }
