@@ -104,26 +104,15 @@
       return wrap_outputString(func, false)
     }
     /*
-      argNum : n
-      func(x0, ..., x_(n-1), buf, ioMode)
-      => func(x0, ..., x_(n-1), pos, buf.length, ioMode)
     */
-    const wrap_input = function(func, argNum, returnValue = false) {
-      return function() {
-        const args = [...arguments]
-        let buf = args[argNum]
-        let ioMode = args[argNum + 1] // may undefined
-        let stack = mod.Runtime.stackSave()
-        let pos = mod.Runtime.stackAlloc(buf.length)
-        if (typeof(buf) == "string") {
-          AsciiStrToMem(pos, buf)
-        } else {
-          Uint8ArrayToMem(pos, buf)
-        }
-        let r = func(...args.slice(0, argNum), pos, buf.length, ioMode)
+    const wrap_deserialize = function(func) {
+      return function(x, buf) {
+        const stack = mod.Runtime.stackSave()
+        const pos = mod.Runtime.stackAlloc(buf.length)
+        Uint8ArrayToMem(pos, buf)
+        const r = func(x, pos, buf.length)
         mod.Runtime.stackRestore(stack)
-        if (returnValue) return r
-        if (r) throw('err wrap_input ' + buf)
+        if (r == 0) throw('err wrap_deserialize', buf)
       }
     }
     const callSetter = function(func, a, p1, p2) {
@@ -237,17 +226,17 @@
     }
 
     mod.sheSecretKeySerialize = wrap_outputArray(mod._sheSecretKeySerialize)
-    mod.sheSecretKeyDeserialize = wrap_input(mod._sheSecretKeyDeserialize, 1)
+    mod.sheSecretKeyDeserialize = wrap_deserialize(mod._sheSecretKeyDeserialize)
     mod.shePublicKeySerialize = wrap_outputArray(mod._shePublicKeySerialize)
-    mod.shePublicKeyDeserialize = wrap_input(mod._shePublicKeyDeserialize, 1)
+    mod.shePublicKeyDeserialize = wrap_deserialize(mod._shePublicKeyDeserialize)
     mod.sheCipherTextG1Serialize = wrap_outputArray(mod._sheCipherTextG1Serialize)
-    mod.sheCipherTextG1Deserialize = wrap_input(mod._sheCipherTextG1Deserialize, 1)
+    mod.sheCipherTextG1Deserialize = wrap_deserialize(mod._sheCipherTextG1Deserialize)
     mod.sheDecG1 = wrap_dec(mod._sheDecG1)
     mod.sheCipherTextG2Serialize = wrap_outputArray(mod._sheCipherTextG2Serialize)
-    mod.sheCipherTextG2Deserialize = wrap_input(mod._sheCipherTextG2Deserialize, 1)
+    mod.sheCipherTextG2Deserialize = wrap_deserialize(mod._sheCipherTextG2Deserialize)
     mod.sheDecG2 = wrap_dec(mod._sheDecG2)
     mod.sheCipherTextGTSerialize = wrap_outputArray(mod._sheCipherTextGTSerialize)
-    mod.sheCipherTextGTDeserialize = wrap_input(mod._sheCipherTextGTDeserialize, 1)
+    mod.sheCipherTextGTDeserialize = wrap_deserialize(mod._sheCipherTextGTDeserialize)
     mod.sheDecGT = wrap_dec(mod._sheDecGT)
 
     class Common {
