@@ -325,13 +325,13 @@
         callSetter(mod.shePublicKeyDeserialize, this.a_, s)
       }
       encG1(m) {
-        return callEnc(mod._sheEnc32G1, exports.CipherTextG1, this.a_, m)
+        return callEnc(mod._sheEncG1, exports.CipherTextG1, this.a_, m)
       }
       encG2(m) {
-        return callEnc(mod._sheEnc32G2, exports.CipherTextG2, this.a_, m)
+        return callEnc(mod._sheEncG2, exports.CipherTextG2, this.a_, m)
       }
       encGT(m) {
-        return callEnc(mod._sheEnc32GT, exports.CipherTextGT, this.a_, m)
+        return callEnc(mod._sheEncGT, exports.CipherTextGT, this.a_, m)
       }
       reRand(c) {
         let reRand = null
@@ -460,13 +460,13 @@
       let mulInt = null
       let cstr = null
       if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMul32G1
+        mulInt = mod._sheMulG1
         cstr = exports.CipherTextG1
       } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMul32G2
+        mulInt = mod._sheMulG2
         cstr = exports.CipherTextG2
       } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMul32GT
+        mulInt = mod._sheMulGT
         cstr = exports.CipherTextGT
       } else {
         throw('exports.mulInt:not supported')
