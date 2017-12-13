@@ -9,6 +9,7 @@ she.init()
     serializeTest()
     rerandTest()
     convertTest()
+    ppubTest()
     benchmark()
   })
 
@@ -108,6 +109,28 @@ function bench(label, count, func) {
   const t = (end - start) / count
   console.log(label + ' ' + t)
 }
+
+function ppubTest() {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const m = 1234
+  const c1 = ppub.encG1(m)
+  assert.equal(sec.dec(c1), m)
+  const c2 = ppub.encG2(m)
+  assert.equal(sec.dec(c2), m)
+  const ct = ppub.encGT(m)
+  assert.equal(sec.dec(ct), m)
+
+  bench('PPKencG1', 100, () => ppub.encG1(m))
+  bench('PPKencG2', 100, () => ppub.encG2(m))
+  bench('PPKencGT', 100, () => ppub.encGT(m))
+
+  ppub.destroy()
+}
+
 
 function benchmark() {
   const sec = new she.SecretKey()

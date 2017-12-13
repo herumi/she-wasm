@@ -41,6 +41,11 @@ function benchAll() {
 	bench('AddGTT', C, () => { she.add(ct1, ct2) })
 	bench('MulT', 10, () => { she.mul(c11, c21) })
 	bench('DecGTT', 10, () => { sec.dec(ct1) })
+
+    const ppub = new she.PrecomputedPublicKey()
+    ppub.init(pub)
+	bench('PPKencG1T', C, () => { ppub.encG1(100) })
+	bench('PPKencG2T', C, () => { ppub.encG2(100) })
 }
 
 function appendXY(x, y) {

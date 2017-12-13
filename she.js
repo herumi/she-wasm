@@ -150,6 +150,15 @@
       mod.Runtime.stackRestore(stack)
       return c
     }
+    const callPPKEnc = function(func, cstr, ppub, m) {
+      let c = new cstr()
+      let stack = mod.Runtime.stackSave()
+      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+      func(cPos, ppub, m)
+      copyToUint32Array(c.a_, cPos)
+      mod.Runtime.stackRestore(stack)
+      return c
+    }
     // return func(x, y)
     const callAddSub = function(func, cstr, x, y) {
       let z = new cstr()
@@ -313,6 +322,39 @@
       r = new exports.SecretKey()
       r.deserializeHexStr(s)
       return r
+    }
+    exports.PrecomputedPublicKey = class {
+      constructor() {
+        this.p = mod._shePrecomputedPublicKeyCreate()
+      }
+      /*
+        call destroy if PrecomputedPublicKey is not necessary
+        to avoid memory leak
+      */
+      destroy() {
+        if (this.p == null) return
+        mod._shePrecomputedPublicKeyDestroy(this.p)
+        this.p = null
+      }
+      /*
+        initialize PrecomputedPublicKey by PublicKey pub
+      */
+      init(pub) {
+        const stack = mod.Runtime.stackSave()
+        const pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
+        copyFromUint32Array(pubPos, pub.a_)
+        mod._shePrecomputedPublicKeyInit(this.p, pubPos)
+        mod.Runtime.stackRestore(stack)
+      }
+      encG1(m) {
+        return callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
+      }
+      encG2(m) {
+        return callPPKEnc(mod._shePrecomputedPublicKeyEncG2, exports.CipherTextG2, this.p, m)
+      }
+      encGT(m) {
+        return callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m)
+      }
     }
     exports.PublicKey = class extends Common {
       constructor() {
