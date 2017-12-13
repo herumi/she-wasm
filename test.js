@@ -9,6 +9,7 @@ she.init()
     serializeTest()
     rerandTest()
     convertTest()
+    benchmark()
   })
 
 function minimumTest() {
@@ -96,4 +97,31 @@ function convertTest() {
   const m = 987
   assert.equal(sec.dec(pub.convert(pub.encG1(m))), m)
   assert.equal(sec.dec(pub.convert(pub.encG2(m))), m)
+}
+
+function bench(label, count, func) {
+  const start = Date.now()
+  for (let i = 0; i < count; i++) {
+    func()
+  }
+  const end = Date.now()
+  const t = (end - start) / count
+  console.log(label + ' ' + t)
+}
+
+function benchmark() {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m = 1234
+  bench('encG1', 100, () => pub.encG1(m))
+  bench('encG2', 100, () => pub.encG2(m))
+  bench('encGT', 100, () => pub.encGT(m))
+  const c1 = pub.encG1(m)
+  const c2 = pub.encG2(m)
+  const ct = pub.encGT(m)
+  bench('addG1', 100, () => she.add(c1, c1))
+  bench('addG2', 100, () => she.add(c2, c2))
+  bench('addGT', 100, () => she.add(ct, ct))
+  bench('mul', 100, () => she.mul(c1, c2))
 }
