@@ -185,6 +185,22 @@
       mod.Runtime.stackRestore(stack)
       return z
     }
+    // return func((G1)x, (G2)y)
+    const callMul = function(func, x, y) {
+      if (!exports.CipherTextG1.prototype.isPrototypeOf(x)
+        || !exports.CipherTextG2.prototype.isPrototypeOf(y)) throw('exports.mul:bad type')
+      let z = new exports.CipherTextGT()
+      let stack = mod.Runtime.stackSave()
+      let xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
+      let yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
+      let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
+      copyFromUint32Array(xPos, x.a_)
+      copyFromUint32Array(yPos, y.a_)
+      func(zPos, xPos, yPos)
+      copyToUint32Array(z.a_, zPos)
+      mod.Runtime.stackRestore(stack)
+      return z
+    }
     // return func(c)
     const callDec = function(func, sec, c) {
       let stack = mod.Runtime.stackSave()
@@ -517,19 +533,21 @@
     }
     // return (G1)x * (G2)y
     exports.mul = function(x, y) {
-      if (!exports.CipherTextG1.prototype.isPrototypeOf(x)
-        || !exports.CipherTextG2.prototype.isPrototypeOf(y)) throw('exports.mul:bad type')
-      let z = new exports.CipherTextGT()
-      let stack = mod.Runtime.stackSave()
-      let xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
-      let yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
-      let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
-      copyFromUint32Array(xPos, x.a_)
-      copyFromUint32Array(yPos, y.a_)
-      mod._sheMul(zPos, xPos, yPos)
-      copyToUint32Array(z.a_, zPos)
+      return callMul(mod._sheMul, x, y)
+    }
+    exports.mulML = function(x, y) {
+      return callMul(mod._sheMulML, x, y)
+    }
+    exports.finalExpGT = function(x) {
+      const y = new exports.CipherTextGT()
+      const stack = mod.Runtime.stackSave()
+      const xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
+      const yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
+      copyFromUint32Array(xPos, x.a_);
+      mod._sheFinalExpGT(yPos, xPos)
+      copyToUint32Array(y.a_, yPos)
       mod.Runtime.stackRestore(stack)
-      return z
+      return y
     }
     let r = mod._sheInit(curveType, MCLBN_FP_UNIT_SIZE)
     if (r) throw('_sheInit err')

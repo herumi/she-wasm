@@ -10,6 +10,7 @@ she.init()
     rerandTest()
     convertTest()
     ppubTest()
+    finalExpTest()
     benchmark()
   })
 
@@ -131,6 +132,31 @@ function ppubTest() {
   ppub.destroy()
 }
 
+function finalExpTest() {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m11 = 5
+  const m12 = 7
+  const m21 = -3
+  const m22 = 9
+  const c11 = pub.encG1(m11)
+  const c12 = pub.encG1(m12)
+  const c21 = pub.encG2(m21)
+  const c22 = pub.encG2(m22)
+
+  let ct = she.mul(c11, c21)
+  assert.equal(sec.dec(ct), m11 * m21)
+
+  const ct1 = she.mulML(c11, c21)
+  ct = she.finalExpGT(ct1)
+  assert.equal(sec.dec(ct), m11 * m21)
+
+  const ct2 = she.mulML(c12, c22)
+  ct = she.add(ct1, ct2)
+  ct = she.finalExpGT(ct)
+  assert.equal(sec.dec(ct), (m11 * m21) + (m12 * m22))
+}
 
 function benchmark() {
   const sec = new she.SecretKey()
@@ -146,5 +172,7 @@ function benchmark() {
   bench('addG1', 100, () => she.add(c1, c1))
   bench('addG2', 100, () => she.add(c2, c2))
   bench('addGT', 100, () => she.add(ct, ct))
-  bench('mul', 100, () => she.mul(c1, c2))
+  bench('mul', 50, () => she.mul(c1, c2))
+  bench('mulML', 50, () => she.mulML(c1, c2))
+  bench('finalExp', 50, () => she.finalExpGT(ct))
 }
