@@ -30,22 +30,32 @@ function benchAll() {
 	const C = 50
 	bench('EncG1T', C, () => { pub.encG1(100) })
 	bench('EncG2T', C, () => { pub.encG2(100) })
+	bench('EncGTT', C, () => { pub.encGT(100) })
 	const c11 = pub.encG1(1)
 	const c12 = pub.encG1(2)
-	bench('AddG1T', C, () => { she.add(c11, c12) })
 	const c21 = pub.encG2(1)
 	const c22 = pub.encG2(2)
-	bench('AddG2T', C, () => { she.add(c21, c22) })
 	const ct1 = pub.encGT(123)
 	const ct2 = pub.encGT(2)
+	bench('AddG1T', C, () => { she.add(c11, c12) })
+	bench('AddG2T', C, () => { she.add(c21, c22) })
 	bench('AddGTT', C, () => { she.add(ct1, ct2) })
+
 	bench('MulT', 10, () => { she.mul(c11, c21) })
+
+	bench('DecG1T', C, () => { sec.dec(c11) })
+	bench('DecG2T', C, () => { sec.dec(c21) })
 	bench('DecGTT', 10, () => { sec.dec(ct1) })
+
+    bench('ReRandG1T', C, () => { pub.reRand(c11) })
+    bench('ReRandG2T', C, () => { pub.reRand(c21) })
+    bench('ReRandGTT', C, () => { pub.reRand(ct1) })
 
     const ppub = new she.PrecomputedPublicKey()
     ppub.init(pub)
 	bench('PPKencG1T', C, () => { ppub.encG1(100) })
 	bench('PPKencG2T', C, () => { ppub.encG2(100) })
+	bench('PPKencGTT', C, () => { ppub.encGT(100) })
 }
 
 function appendXY(x, y) {
