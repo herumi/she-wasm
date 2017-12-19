@@ -6,7 +6,8 @@ function setText(name, val) { document.getElementsByName(name)[0].innerText = va
 let sec = null
 let pub = null
 
-she.init(256)
+const L = 10
+she.init(1 << L)
   .then(() => {
     setText('status', 'OK')
     sec = new she.SecretKey()
@@ -28,15 +29,16 @@ function bench(label, count, func) {
 
 function benchAll() {
 	const C = 50
-	bench('EncG1T', C, () => { pub.encG1(100) })
-	bench('EncG2T', C, () => { pub.encG2(100) })
-	bench('EncGTT', C, () => { pub.encGT(100) })
-	const c11 = pub.encG1(1)
-	const c12 = pub.encG1(2)
-	const c21 = pub.encG2(1)
-	const c22 = pub.encG2(2)
-	const ct1 = pub.encGT(123)
-	const ct2 = pub.encGT(2)
+    const m = 1 << (L + 1)
+	bench('EncG1T', C, () => { pub.encG1(m) })
+	bench('EncG2T', C, () => { pub.encG2(m) })
+	bench('EncGTT', C, () => { pub.encGT(m) })
+	const c11 = pub.encG1(m)
+	const c12 = pub.encG1(m)
+	const c21 = pub.encG2(m)
+	const c22 = pub.encG2(m)
+	const ct1 = pub.encGT(m)
+	const ct2 = pub.encGT(m)
 	bench('AddG1T', C, () => { she.add(c11, c12) })
 	bench('AddG2T', C, () => { she.add(c21, c22) })
 	bench('AddGTT', C, () => { she.add(ct1, ct2) })
@@ -53,9 +55,9 @@ function benchAll() {
 
     const ppub = new she.PrecomputedPublicKey()
     ppub.init(pub)
-	bench('PPKencG1T', C, () => { ppub.encG1(100) })
-	bench('PPKencG2T', C, () => { ppub.encG2(100) })
-	bench('PPKencGTT', C, () => { ppub.encGT(100) })
+	bench('PPKencG1T', C, () => { ppub.encG1(m) })
+	bench('PPKencG2T', C, () => { ppub.encG2(m) })
+	bench('PPKencGTT', C, () => { ppub.encGT(m) })
 }
 
 function appendXY(x, y) {
