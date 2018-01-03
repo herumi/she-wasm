@@ -251,12 +251,12 @@
       if (r) throw('callConvert err')
       return ct
     }
-    const callLoadTable = (func, a, tryNum) => {
+    const callLoadTable = (func, a) => {
       const p = mod._malloc(a.length)
       for (let i = 0; i < a.length; i++) {
         mod.HEAP8[p + i] = a[i]
       }
-      const n = func(p, a.length, tryNum)
+      const n = func(p, a.length)
       if (n == 0) throw('callLoadTable err')
     }
 
@@ -267,9 +267,11 @@
     mod.sheCipherTextG1Serialize = wrap_outputArray(mod._sheCipherTextG1Serialize)
     mod.sheCipherTextG1Deserialize = wrap_deserialize(mod._sheCipherTextG1Deserialize)
     mod.sheDecG1 = wrap_dec(mod._sheDecG1)
+    mod.sheDecG1ViaGT = wrap_dec(mod._sheDecG1ViaGT)
     mod.sheCipherTextG2Serialize = wrap_outputArray(mod._sheCipherTextG2Serialize)
     mod.sheCipherTextG2Deserialize = wrap_deserialize(mod._sheCipherTextG2Deserialize)
     mod.sheDecG2 = wrap_dec(mod._sheDecG2)
+    mod.sheDecG2ViaGT = wrap_dec(mod._sheDecG2ViaGT)
     mod.sheCipherTextGTSerialize = wrap_outputArray(mod._sheCipherTextGTSerialize)
     mod.sheCipherTextGTDeserialize = wrap_deserialize(mod._sheCipherTextGTDeserialize)
     mod.sheDecGT = wrap_dec(mod._sheDecGT)
@@ -326,6 +328,17 @@
           dec = mod.sheDecGT
         } else {
           throw('exports.SecretKey.dec:not supported')
+        }
+        return callDec(dec, this.a_, c.a_)
+      }
+      decViaGT(c) {
+        let dec = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          dec = mod.sheDecG1ViaGT
+        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          dec = mod.sheDecG2ViaGT
+        } else {
+          throw('exports.SecretKey.decViaGT:not supported')
         }
         return callDec(dec, this.a_, c.a_)
       }
@@ -559,20 +572,30 @@
       mod.Runtime.stackRestore(stack)
       return y
     }
-    exports.loadTableForG1DLP = (a, tryNum = defaultTryNum) => {
-      callLoadTable(mod._sheLoadTableForG1DLP, a, tryNum)
+    exports.loadTableForG1DLP = (a) => {
+      callLoadTable(mod._sheLoadTableForG1DLP, a)
     }
-    exports.loadTableForG2DLP = (a, tryNum = defaultTryNum) => {
-      callLoadTable(mod._sheLoadTableForG2DLP, a, tryNum)
+    exports.loadTableForG2DLP = (a) => {
+      callLoadTable(mod._sheLoadTableForG2DLP, a)
     }
-    exports.loadTableForGTDLP = (a, tryNum = defaultTryNum) => {
-      callLoadTable(mod._sheLoadTableForGTDLP, a, tryNum)
+    exports.loadTableForGTDLP = (a) => {
+      callLoadTable(mod._sheLoadTableForGTDLP, a)
+    }
+    exports.setTryNum = (tryNum) => {
+      mod._sheSetTryNum(tryNum)
+    }
+    exports.useDecG1ViaGT = (use = 1) => {
+      mod._sheUseDecG1ViaGT(use)
+    }
+    exports.useDecG2ViaGT = (use = 1) => {
+      mod._sheUseDecG2ViaGT(use)
     }
     let r = mod._sheInit(curveType, MCLBN_FP_UNIT_SIZE)
     if (r) throw('_sheInit err')
     console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
-    r = mod._sheSetRangeForDLP(range, tryNum)
+    r = mod._sheSetRangeForDLP(range)
     if (r) throw('_sheSetRangeForDLP err')
+    mod._sheSetTryNum(tryNum)
     console.log('finished')
   } // setup()
   /*

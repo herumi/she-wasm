@@ -42,9 +42,11 @@ function encDecTest() {
   for (let m = -3; m < 3; m++) {
     const c1 = pub.encG1(m)
     assert.equal(sec.dec(c1), m)
+    assert.equal(sec.decViaGT(c1), m)
     assert.equal(sec.isZero(c1), m == 0)
     const c2 = pub.encG2(m)
     assert.equal(sec.dec(c2), m)
+    assert.equal(sec.decViaGT(c2), m)
     assert.equal(sec.isZero(c2), m == 0)
     const ct = pub.encGT(m)
     assert.equal(sec.dec(ct), m)
@@ -168,7 +170,7 @@ function loadTableTest() {
   const DLPtable = 'she-dlp-0-20-gt.bin'
   try {
     she.loadTableForGTDLP(fs.readFileSync(DLPtable))
-    console.log('done')
+    console.log(`use ${DLPtable} for DLP`)
     {
       const m = 0x7fffffff
       console.log(`m=${m}`)
