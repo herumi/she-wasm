@@ -25,6 +25,8 @@
   const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
   const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
+  const defaultTryNum = 2048
+
   const setup = function(exports, curveType, range, tryNum) {
     const mod = exports.mod
     const ptrToStr = function(pos, n) {
@@ -248,6 +250,14 @@
       mod.Runtime.stackRestore(stack)
       if (r) throw('callConvert err')
       return ct
+    }
+    const callLoadTable = (func, a, tryNum) => {
+      const p = mod._malloc(a.length)
+      for (let i = 0; i < a.length; i++) {
+        mod.HEAP8[p + i] = a[i]
+      }
+      const n = func(p, a.length, tryNum)
+      if (n == 0) throw('callLoadTable err')
     }
 
     mod.sheSecretKeySerialize = wrap_outputArray(mod._sheSecretKeySerialize)
@@ -549,6 +559,15 @@
       mod.Runtime.stackRestore(stack)
       return y
     }
+    exports.loadTableForG1DLP = (a, tryNum = defaultTryNum) => {
+      callLoadTable(mod._sheLoadTableForG1DLP, a, tryNum)
+    }
+    exports.loadTableForG2DLP = (a, tryNum = defaultTryNum) => {
+      callLoadTable(mod._sheLoadTableForG2DLP, a, tryNum)
+    }
+    exports.loadTableForGTDLP = (a, tryNum = defaultTryNum) => {
+      callLoadTable(mod._sheLoadTableForGTDLP, a, tryNum)
+    }
     let r = mod._sheInit(curveType, MCLBN_FP_UNIT_SIZE)
     if (r) throw('_sheInit err')
     console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
@@ -562,7 +581,7 @@
     @param tryNum [in] how many search ; O(tryNum) time
     can decrypt (range * tryNum) range value
   */
-  exports.init = (range = 1024, tryNum = 1024) => {
+  exports.init = (range = 1024, tryNum = defaultTryNum) => {
     const curveType = MCLBN_CURVE_FP254BNB
     console.log('init')
     const name = 'she_c'

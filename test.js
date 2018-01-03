@@ -11,6 +11,7 @@ she.init()
     convertTest()
     ppubTest()
     finalExpTest()
+    loadTableTest()
     benchmark()
   })
 
@@ -158,21 +159,54 @@ function finalExpTest() {
   assert.equal(sec.dec(ct), (m11 * m21) + (m12 * m22))
 }
 
+function loadTableTest() {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const fs = require('fs')
+  console.log('load table')
+  const DLPtable = 'she-dlp-0-20-gt.bin'
+  try {
+    she.loadTableForGTDLP(fs.readFileSync(DLPtable))
+    console.log('done')
+    {
+      const m = 0x7fffffff
+      console.log(`m=${m}`)
+      const ct = pub.encGT(m)
+      assert.equal(sec.dec(ct), m)
+      bench('decGT', 10, () => sec.dec(ct))
+    }
+    {
+      const m = -0x7fffffff - 1
+      console.log(`m=${m}`)
+      const ct = pub.encGT(m)
+      assert.equal(sec.dec(ct), m)
+    }
+  } catch (e) {
+    console.log(`${e} is not found`)
+    console.log(`curl -O https://herumi.github.io/she-dlp-table/${DLPtable}`)
+  }
+}
+
 function benchmark() {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   const m = 1234
-  bench('encG1', 100, () => pub.encG1(m))
-  bench('encG2', 100, () => pub.encG2(m))
-  bench('encGT', 100, () => pub.encGT(m))
+  const C = 100
+  bench('encG1', C, () => pub.encG1(m))
+  bench('encG2', C, () => pub.encG2(m))
+  bench('encGT', C, () => pub.encGT(m))
   const c1 = pub.encG1(m)
   const c2 = pub.encG2(m)
   const ct = pub.encGT(m)
-  bench('addG1', 100, () => she.add(c1, c1))
-  bench('addG2', 100, () => she.add(c2, c2))
-  bench('addGT', 100, () => she.add(ct, ct))
-  bench('mul', 50, () => she.mul(c1, c2))
-  bench('mulML', 50, () => she.mulML(c1, c2))
-  bench('finalExp', 50, () => she.finalExpGT(ct))
+  bench('decG1', C, () => sec.dec(c1))
+  bench('decG2', C, () => sec.dec(c2))
+  bench('decGT', C, () => sec.dec(ct))
+  bench('addG1', C, () => she.add(c1, c1))
+  bench('addG2', C, () => she.add(c2, c2))
+  bench('addGT', C, () => she.add(ct, ct))
+  bench('mul', C, () => she.mul(c1, c2))
+  bench('mulML', C, () => she.mulML(c1, c2))
+  bench('finalExp', C, () => she.finalExpGT(ct))
 }
