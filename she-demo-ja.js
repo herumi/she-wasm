@@ -6,15 +6,21 @@ function setText(name, val) { document.getElementsByName(name)[0].innerText = va
 let sec = null
 let pub = null
 
-const L = 10
-she.init(1 << L)
+she.init()
   .then(() => {
-    setText('status', 'OK')
-    sec = new she.SecretKey()
-    sec.setByCSPRNG()
-    setText('sec', sec.serializeToHexStr())
-    pub = sec.getPublicKey()
-    setText('pub', pub.serializeToHexStr())
+    fetch('https://herumi.github.io/she-dlp-table/she-dlp-0-20-gt.bin')
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const a = new Uint8Array(buffer)
+        she.loadTableForGTDLP(a)
+        console.log('load Table done')
+        setText('status', 'OK')
+        sec = new she.SecretKey()
+        sec.setByCSPRNG()
+        setText('sec', sec.serializeToHexStr())
+        pub = sec.getPublicKey()
+        setText('pub', pub.serializeToHexStr())
+      })
   })
 
 function bench(label, count, func) {
@@ -29,6 +35,7 @@ function bench(label, count, func) {
 
 function benchAll() {
 	const C = 50
+    const L = 2
     const m = 1 << (L + 1)
 	bench('EncG1T', C, () => { pub.encG1(m) })
 	bench('EncG2T', C, () => { pub.encG2(m) })
