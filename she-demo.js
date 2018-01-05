@@ -8,12 +8,19 @@ let pub = null
 
 she.init()
   .then(() => {
-    setText('status', 'ok')
-    sec = new she.SecretKey()
-    sec.setByCSPRNG()
-    sec.dump('sec=')
-    pub = sec.getPublicKey()
-    pub.dump('pub=')
+    fetch('https://herumi.github.io/she-dlp-table/she-dlp-0-20-gt.bin')
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const a = new Uint8Array(buffer)
+        she.loadTableForGTDLP(a)
+        console.log('load Table done')
+        setText('status', 'ok')
+        sec = new she.SecretKey()
+        sec.setByCSPRNG()
+        sec.dump('sec=')
+        pub = sec.getPublicKey()
+        pub.dump('pub=')
+      })
   })
 
 function append() {
