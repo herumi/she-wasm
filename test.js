@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 const she = require('./she.js')
 const assert = require('assert')
 
@@ -15,7 +15,7 @@ she.init()
     benchmark()
   })
 
-function minimumTest() {
+function minimumTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -35,7 +35,7 @@ function minimumTest() {
   assert.equal(sec.dec(ct), (m1 + m2) * (m3 + m4))
 }
 
-function encDecTest() {
+function encDecTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -43,25 +43,25 @@ function encDecTest() {
     const c1 = pub.encG1(m)
     assert.equal(sec.dec(c1), m)
     assert.equal(sec.decViaGT(c1), m)
-    assert.equal(sec.isZero(c1), m == 0)
+    assert.equal(sec.isZero(c1), m === 0)
     const c2 = pub.encG2(m)
     assert.equal(sec.dec(c2), m)
     assert.equal(sec.decViaGT(c2), m)
-    assert.equal(sec.isZero(c2), m == 0)
+    assert.equal(sec.isZero(c2), m === 0)
     const ct = pub.encGT(m)
     assert.equal(sec.dec(ct), m)
-    assert.equal(sec.isZero(ct), m == 0)
+    assert.equal(sec.isZero(ct), m === 0)
   }
 }
 
-function serializeSubTest(t, cstr) {
+function serializeSubTest (t, Cstr) {
   const s = t.serializeToHexStr()
-  const t2 = new cstr()
+  const t2 = new Cstr()
   t2.deserializeHexStr(s)
   assert.deepEqual(t.serialize(), t2.serialize())
 }
 
-function serializeTest() {
+function serializeTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -76,15 +76,15 @@ function serializeTest() {
   serializeSubTest(ct, she.CipherTextGT)
 }
 
-function rerandSubTest(c, sec, pub, m) {
+function rerandSubTest (c, sec, pub, m) {
   const s1 = c.serializeToHexStr()
   pub.reRand(c)
   const s2 = c.serializeToHexStr()
-  assert(s1 != s2)
+  assert(s1 !== s2)
   assert.equal(sec.dec(c), m)
 }
 
-function rerandTest() {
+function rerandTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -95,7 +95,7 @@ function rerandTest() {
   rerandSubTest(pub.encGT(m), sec, pub, m)
 }
 
-function convertTest() {
+function convertTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -104,7 +104,7 @@ function convertTest() {
   assert.equal(sec.dec(pub.convert(pub.encG2(m))), m)
 }
 
-function bench(label, count, func) {
+function bench (label, count, func) {
   const start = Date.now()
   for (let i = 0; i < count; i++) {
     func()
@@ -114,7 +114,7 @@ function bench(label, count, func) {
   console.log(label + ' ' + t)
 }
 
-function ppubTest() {
+function ppubTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -135,7 +135,7 @@ function ppubTest() {
   ppub.destroy()
 }
 
-function finalExpTest() {
+function finalExpTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -161,7 +161,7 @@ function finalExpTest() {
   assert.equal(sec.dec(ct), (m11 * m21) + (m12 * m22))
 }
 
-function loadTableTest() {
+function loadTableTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -190,7 +190,7 @@ function loadTableTest() {
   }
 }
 
-function benchmark() {
+function benchmark () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
