@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/herumi/she-wasm.png)](https://travis-ci.org/herumi/she-wasm)
 # Two-level homomorphic encryption for Node.js by WebAssembly
 
 # Abstract
