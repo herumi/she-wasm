@@ -12,6 +12,7 @@ she.init()
     ppubTest()
     finalExpTest()
     loadTableTest()
+    zkpBinTest()
     benchmark()
   })
 
@@ -188,6 +189,36 @@ function loadTableTest () {
     console.log(`${e} is not found`)
     console.log(`curl -O https://herumi.github.io/she-dlp-table/${DLPtable}`)
   }
+}
+
+function zkpBinTestSub (sec, pub, encWithZkpBin) {
+  for (let m = 0; m < 2; m++) {
+    const [c, zkp] = pub[encWithZkpBin](m)
+    assert.equal(sec.dec(c), m)
+    assert(pub.verify(c, zkp))
+    zkp.a_[0]++
+    assert(!pub.verify(c, zkp))
+  }
+  try {
+    const [c, zkp] = pub[encWithZkpBin](2)
+    assert(false)
+  } catch (e) {
+    assert(true)
+  }
+}
+
+function zkpBinTest () {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  zkpBinTestSub(sec, pub, 'encWithZkpBinG1')
+  zkpBinTestSub(sec, pub, 'encWithZkpBinG2')
+
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
+  zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
+  ppub.destroy()
 }
 
 function benchmark () {

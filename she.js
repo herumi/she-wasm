@@ -24,6 +24,7 @@
   const SHE_CIPHERTEXT_G1_SIZE = MCLBN_G1_SIZE * 2
   const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
   const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
+  const SHE_ZKPBIN_SIZE = MCLBN_FP_SIZE * 4
 
   const defaultTryNum = 2048
 
@@ -152,6 +153,34 @@
       mod.Runtime.stackRestore(stack)
       return c
     }
+    const callEncWithZkpBin = function(func, cstr, pub, m) {
+      let c = new cstr()
+      let stack = mod.Runtime.stackSave()
+      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+      let zkp = new exports.ZkpBin()
+      let zkpPos = mod.Runtime.stackAlloc(zkp.a_.length * 4)
+      copyFromUint32Array(pubPos, pub);
+      const r = func(cPos, zkpPos, pubPos, m)
+      copyToUint32Array(c.a_, cPos)
+      copyToUint32Array(zkp.a_, zkpPos)
+      mod.Runtime.stackRestore(stack)
+      if (r) throw('encWithZkpBin:bad m:' + m)
+      return [c, zkp]
+    }
+    const callPPKEncWithZkpBin = function(func, cstr, pubPos, m) {
+      let c = new cstr()
+      let stack = mod.Runtime.stackSave()
+      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+      let zkp = new exports.ZkpBin()
+      let zkpPos = mod.Runtime.stackAlloc(zkp.a_.length * 4)
+      const r = func(cPos, zkpPos, pubPos, m)
+      copyToUint32Array(c.a_, cPos)
+      copyToUint32Array(zkp.a_, zkpPos)
+      mod.Runtime.stackRestore(stack)
+      if (r) throw('encWithZkpBin:bad m:' + m)
+      return [c, zkp]
+    }
     const callPPKEnc = function(func, cstr, ppub, m) {
       let c = new cstr()
       let stack = mod.Runtime.stackSave()
@@ -224,6 +253,28 @@
       mod.Runtime.stackRestore(stack)
       return r
     }
+    const callVerify = function(func, pub, c, zkp) {
+      let stack = mod.Runtime.stackSave()
+      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+      let cPos = mod.Runtime.stackAlloc(c.length * 4)
+      let zkpPos = mod.Runtime.stackAlloc(zkp.length * 4)
+      copyFromUint32Array(pubPos, pub)
+      copyFromUint32Array(cPos, c)
+      copyFromUint32Array(zkpPos, zkp)
+      const r = func(pubPos, cPos, zkpPos)
+      mod.Runtime.stackRestore(stack)
+      return r == 1
+    }
+    const callPPKVerify = function(func, pubPos, c, zkp) {
+      let stack = mod.Runtime.stackSave()
+      let cPos = mod.Runtime.stackAlloc(c.length * 4)
+      let zkpPos = mod.Runtime.stackAlloc(zkp.length * 4)
+      copyFromUint32Array(cPos, c)
+      copyFromUint32Array(zkpPos, zkp)
+      const r = func(pubPos, cPos, zkpPos)
+      mod.Runtime.stackRestore(stack)
+      return r == 1
+    }
     // reRand(c)
     const callReRand = function(func, c, pub) {
       let stack = mod.Runtime.stackSave()
@@ -275,6 +326,8 @@
     mod.sheCipherTextGTSerialize = wrap_outputArray(mod._sheCipherTextGTSerialize)
     mod.sheCipherTextGTDeserialize = wrap_deserialize(mod._sheCipherTextGTDeserialize)
     mod.sheDecGT = wrap_dec(mod._sheDecGT)
+    mod.sheZkpBinSerialize = wrap_outputArray(mod._sheZkpBinSerialize)
+    mod.sheZkpBinDeserialize = wrap_deserialize(mod._sheZkpBinDeserialize)
 
     class Common {
       constructor(size) {
@@ -394,6 +447,22 @@
       encGT(m) {
         return callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m)
       }
+      // return [Enc(m), Zkp]
+      encWithZkpBinG1(m) {
+        return callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG1, exports.CipherTextG1, this.p, m)
+      }
+      encWithZkpBinG2(m) {
+        return callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m)
+      }
+      verify(c, zkp) {
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          return callPPKVerify(mod._shePrecomputedPublicKeyVerifyZkpBinG1, this.p, c.a_, zkp.a_)
+        }
+        if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          return callPPKVerify(mod._shePrecomputedPublicKeyVerifyZkpBinG2, this.p, c.a_, zkp.a_)
+        }
+        throw('exports.verify:bad type')
+      }
     }
     exports.PublicKey = class extends Common {
       constructor() {
@@ -413,6 +482,22 @@
       }
       encGT(m) {
         return callEnc(mod._sheEncGT, exports.CipherTextGT, this.a_, m)
+      }
+      // return [Enc(m), Zkp]
+      encWithZkpBinG1(m) {
+        return callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this.a_, m)
+      }
+      encWithZkpBinG2(m) {
+        return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this.a_, m)
+      }
+      verify(c, zkp) {
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          return callVerify(mod._sheVerifyZkpBinG1, this.a_, c.a_, zkp.a_)
+        }
+        if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          return callVerify(mod._sheVerifyZkpBinG2, this.a_, c.a_, zkp.a_)
+        }
+        throw('exports.verify:bad type')
       }
       reRand(c) {
         let reRand = null
@@ -490,6 +575,18 @@
       }
       deserialize(s) {
         callSetter(mod.sheCipherTextGTDeserialize, this.a_, s)
+      }
+    }
+
+    exports.ZkpBin = class extends Common {
+      constructor() {
+        super(SHE_ZKPBIN_SIZE)
+      }
+      serialize() {
+        return callGetter(mod.sheZkpBinSerialize, this.a_)
+      }
+      deserialize(s) {
+        callSetter(mod.sheZkpBinDeserialize, this.a_, s)
       }
     }
 
