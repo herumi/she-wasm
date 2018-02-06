@@ -196,6 +196,7 @@ function zkpBinTestSub (sec, pub, encWithZkpBin) {
     const [c, zkp] = pub[encWithZkpBin](m)
     assert.equal(sec.dec(c), m)
     assert(pub.verify(c, zkp))
+    serializeSubTest(zkp, she.ZkpBin)
     zkp.a_[0]++
     assert(!pub.verify(c, zkp))
   }
