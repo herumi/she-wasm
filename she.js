@@ -300,6 +300,7 @@
       copyFromUint32Array(cPos, c);
       let r = func(ctPos, pubPos, cPos)
       copyToUint32Array(ct.a_, ctPos)
+      _free(ctPos)
       _free(pubPos)
       _free(ctPos)
       if (r) throw('callConvert err')
