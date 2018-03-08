@@ -4,16 +4,20 @@ const assert = require('assert')
 
 she.init()
   .then(() => {
-    minimumTest()
-    encDecTest()
-    serializeTest()
-    rerandTest()
-    convertTest()
-    ppubTest()
-    finalExpTest()
-    loadTableTest()
-    zkpBinTest()
-    benchmark()
+    try {
+      minimumTest()
+      encDecTest()
+      serializeTest()
+      rerandTest()
+      convertTest()
+      ppubTest()
+      finalExpTest()
+      loadTableTest()
+      zkpBinTest()
+      benchmark()
+    } catch (e) {
+      console.log(`e=${e}`)
+    }
   })
 
 function minimumTest () {
