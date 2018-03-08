@@ -30,6 +30,9 @@
 
   const setup = function(exports, curveType, range, tryNum) {
     const mod = exports.mod
+    const _free = pos => {
+      mod._free(pos)
+    }
     const ptrToStr = function(pos, n) {
       let s = ''
         for (let i = 0; i < n; i++) {
@@ -83,22 +86,21 @@
     const wrap_outputString = function(func, doesReturnString = true) {
       return function(x, ioMode = 0) {
         let maxBufSize = 2048
-        let stack = mod.Runtime.stackSave()
-        let pos = mod.Runtime.stackAlloc(maxBufSize)
+        let pos = mod._malloc(maxBufSize)
         let n = func(pos, maxBufSize, x, ioMode)
         if (n < 0) {
           throw('err gen_str:' + x)
         }
         if (doesReturnString) {
           let s = ptrToStr(pos, n)
-          mod.Runtime.stackRestore(stack)
+          _free(pos)
           return s
         } else {
           let a = new Uint8Array(n)
           for (let i = 0; i < n; i++) {
             a[i] = mod.HEAP8[pos + i]
           }
-          mod.Runtime.stackRestore(stack)
+          _free(pos)
           return a
         }
       }
@@ -110,11 +112,10 @@
     */
     const wrap_deserialize = function(func) {
       return function(x, buf) {
-        const stack = mod.Runtime.stackSave()
-        const pos = mod.Runtime.stackAlloc(buf.length)
+        const pos = mod._malloc(buf.length)
         Uint8ArrayToMem(pos, buf)
         const r = func(x, pos, buf.length)
-        mod.Runtime.stackRestore(stack)
+        _free(pos)
         if (r == 0) throw('err wrap_deserialize', buf)
       }
     }
@@ -133,10 +134,9 @@
     }
     const wrap_dec = function(func) {
       return function(sec, c) {
-        let stack = mod.Runtime.stackSave()
-        let pos = mod.Runtime.stackAlloc(8)
+        let pos = mod._malloc(8)
         let r = func(pos, sec, c)
-        mod.Runtime.stackRestore(stack)
+        _free(pos)
         if (r != 0) throw('sheDec')
         let v = mod.HEAP32[pos / 4]
         return v
@@ -144,76 +144,77 @@
     }
     const callEnc = function(func, cstr, pub, m) {
       let c = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
-      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+      let cPos = mod._malloc(c.a_.length * 4)
+      let pubPos = mod._malloc(pub.length * 4)
       copyFromUint32Array(pubPos, pub);
       func(cPos, pubPos, m)
       copyToUint32Array(c.a_, cPos)
-      mod.Runtime.stackRestore(stack)
+      _free(pubPos)
+      _free(cPos)
       return c
     }
     const callEncWithZkpBin = function(func, cstr, pub, m) {
       let c = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
-      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+      let cPos = mod._malloc(c.a_.length * 4)
+      let pubPos = mod._malloc(pub.length * 4)
       let zkp = new exports.ZkpBin()
-      let zkpPos = mod.Runtime.stackAlloc(zkp.a_.length * 4)
+      let zkpPos = mod._malloc(zkp.a_.length * 4)
       copyFromUint32Array(pubPos, pub);
       const r = func(cPos, zkpPos, pubPos, m)
       copyToUint32Array(c.a_, cPos)
       copyToUint32Array(zkp.a_, zkpPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zkpPos)
+      _free(pubPos)
+      _free(cPos)
       if (r) throw('encWithZkpBin:bad m:' + m)
       return [c, zkp]
     }
     const callPPKEncWithZkpBin = function(func, cstr, pubPos, m) {
       let c = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+      let cPos = mod._malloc(c.a_.length * 4)
       let zkp = new exports.ZkpBin()
-      let zkpPos = mod.Runtime.stackAlloc(zkp.a_.length * 4)
+      let zkpPos = mod._malloc(zkp.a_.length * 4)
       const r = func(cPos, zkpPos, pubPos, m)
       copyToUint32Array(c.a_, cPos)
       copyToUint32Array(zkp.a_, zkpPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zkpPos)
+      _free(cPos)
       if (r) throw('encWithZkpBin:bad m:' + m)
       return [c, zkp]
     }
     const callPPKEnc = function(func, cstr, ppub, m) {
       let c = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+      let cPos = mod._malloc(c.a_.length * 4)
       func(cPos, ppub, m)
       copyToUint32Array(c.a_, cPos)
-      mod.Runtime.stackRestore(stack)
+      _free(cPos)
       return c
     }
     // return func(x, y)
     const callAddSub = function(func, cstr, x, y) {
       let z = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let xPos = mod.Runtime.stackAlloc(x.length * 4)
-      let yPos = mod.Runtime.stackAlloc(y.length * 4)
-      let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
+      let xPos = mod._malloc(x.length * 4)
+      let yPos = mod._malloc(y.length * 4)
+      let zPos = mod._malloc(z.a_.length * 4)
       copyFromUint32Array(xPos, x);
       copyFromUint32Array(yPos, y);
       func(zPos, xPos, yPos)
       copyToUint32Array(z.a_, zPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zPos)
+      _free(yPos)
+      _free(xPos)
       return z
     }
     // return func(x, y)
     const callMulInt = function(func, cstr, x, y) {
       let z = new cstr()
-      let stack = mod.Runtime.stackSave()
-      let xPos = mod.Runtime.stackAlloc(x.length * 4)
-      let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
+      let xPos = mod._malloc(x.length * 4)
+      let zPos = mod._malloc(z.a_.length * 4)
       copyFromUint32Array(xPos, x);
       func(zPos, xPos, y)
       copyToUint32Array(z.a_, zPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zPos)
+      _free(xPos)
       return z
     }
     // return func((G1)x, (G2)y)
@@ -221,84 +222,86 @@
       if (!exports.CipherTextG1.prototype.isPrototypeOf(x)
         || !exports.CipherTextG2.prototype.isPrototypeOf(y)) throw('exports.mul:bad type')
       let z = new exports.CipherTextGT()
-      let stack = mod.Runtime.stackSave()
-      let xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
-      let yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
-      let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
+      let xPos = mod._malloc(x.a_.length * 4)
+      let yPos = mod._malloc(y.a_.length * 4)
+      let zPos = mod._malloc(z.a_.length * 4)
       copyFromUint32Array(xPos, x.a_)
       copyFromUint32Array(yPos, y.a_)
       func(zPos, xPos, yPos)
       copyToUint32Array(z.a_, zPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zPos)
+      _free(yPos)
+      _free(xPos)
       return z
     }
     // return func(c)
     const callDec = function(func, sec, c) {
-      let stack = mod.Runtime.stackSave()
-      let secPos = mod.Runtime.stackAlloc(sec.length * 4)
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
+      let secPos = mod._malloc(sec.length * 4)
+      let cPos = mod._malloc(c.length * 4)
       copyFromUint32Array(secPos, sec);
       copyFromUint32Array(cPos, c);
       let r = func(secPos, cPos)
-      mod.Runtime.stackRestore(stack)
+      _free(cPos)
+      _free(secPos)
       return r
     }
     const callIsZero = function(func, sec, c) {
-      let stack = mod.Runtime.stackSave()
-      let secPos = mod.Runtime.stackAlloc(sec.length * 4)
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
+      let secPos = mod._malloc(sec.length * 4)
+      let cPos = mod._malloc(c.length * 4)
       copyFromUint32Array(secPos, sec);
       copyFromUint32Array(cPos, c);
       let r = func(secPos, cPos)
-      mod.Runtime.stackRestore(stack)
+      _free(cPos)
+      _free(secPos)
       return r
     }
     const callVerify = function(func, pub, c, zkp) {
-      let stack = mod.Runtime.stackSave()
-      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
-      let zkpPos = mod.Runtime.stackAlloc(zkp.length * 4)
+      let pubPos = mod._malloc(pub.length * 4)
+      let cPos = mod._malloc(c.length * 4)
+      let zkpPos = mod._malloc(zkp.length * 4)
       copyFromUint32Array(pubPos, pub)
       copyFromUint32Array(cPos, c)
       copyFromUint32Array(zkpPos, zkp)
       const r = func(pubPos, cPos, zkpPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zkpPos)
+      _free(cPos)
+      _free(pubPos)
       return r == 1
     }
     const callPPKVerify = function(func, pubPos, c, zkp) {
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
-      let zkpPos = mod.Runtime.stackAlloc(zkp.length * 4)
+      let cPos = mod._malloc(c.length * 4)
+      let zkpPos = mod._malloc(zkp.length * 4)
       copyFromUint32Array(cPos, c)
       copyFromUint32Array(zkpPos, zkp)
       const r = func(pubPos, cPos, zkpPos)
-      mod.Runtime.stackRestore(stack)
+      _free(zkpPos)
+      _free(cPos)
       return r == 1
     }
     // reRand(c)
     const callReRand = function(func, c, pub) {
-      let stack = mod.Runtime.stackSave()
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
-      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+      let cPos = mod._malloc(c.length * 4)
+      let pubPos = mod._malloc(pub.length * 4)
       copyFromUint32Array(cPos, c);
       copyFromUint32Array(pubPos, pub);
       let r = func(cPos, pubPos)
       copyToUint32Array(c, cPos)
-      mod.Runtime.stackRestore(stack)
+      _free(pubPos)
+      _free(cPos)
       if (r) throw('callReRand err')
     }
     // convert
     const callConvert = function(func, pub, c) {
       let ct = new exports.CipherTextGT()
-      let stack = mod.Runtime.stackSave()
-      let ctPos = mod.Runtime.stackAlloc(ct.a_.length * 4)
-      let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
-      let cPos = mod.Runtime.stackAlloc(c.length * 4)
+      let ctPos = mod._malloc(ct.a_.length * 4)
+      let pubPos = mod._malloc(pub.length * 4)
+      let cPos = mod._malloc(c.length * 4)
       copyFromUint32Array(pubPos, pub);
       copyFromUint32Array(cPos, c);
       let r = func(ctPos, pubPos, cPos)
       copyToUint32Array(ct.a_, ctPos)
-      mod.Runtime.stackRestore(stack)
+      _free(pubPos)
+      _free(ctPos)
       if (r) throw('callConvert err')
       return ct
     }
@@ -342,6 +345,72 @@
       dump(msg = '') {
         console.log(msg + this.serializeToHexStr())
       }
+      clear () {
+        this.a_.fill(0)
+      }
+      // alloc new array
+      _alloc () {
+        return mod._malloc(this.a_.length * 4)
+      }
+      // alloc and copy a_ to mod.HEAP32[pos / 4]
+      _allocAndCopy () {
+        const pos = this._alloc()
+        mod.HEAP32.set(this.a_, pos / 4)
+        return pos
+      }
+      // save pos to a_
+      _save (pos) {
+        this.a_.set(mod.HEAP32.subarray(pos / 4, pos / 4 + this.a_.length))
+      }
+      // save and free
+      _saveAndFree(pos) {
+        this._save(pos)
+        _free(pos)
+      }
+      // set parameter (p1, p2 may be undefined)
+      _setter (func, p1, p2) {
+        const pos = this._alloc()
+        const r = func(pos, p1, p2)
+        this._saveAndFree(pos)
+        if (r) throw new Error('_setter err')
+      }
+      // getter (p1, p2 may be undefined)
+      _getter (func, p1, p2) {
+        const pos = this._allocAndCopy()
+        const s = func(pos, p1, p2)
+        _free(pos)
+        return s
+      }
+      _isEqual (func, rhs) {
+        const xPos = this._allocAndCopy()
+        const yPos = rhs._allocAndCopy()
+        const r = func(xPos, yPos)
+        _free(yPos)
+        _free(xPos)
+        return r === 1
+      }
+      // func(y, this) and return y
+      _op1 (func) {
+        const y = new this.constructor()
+        const xPos = this._allocAndCopy()
+        const yPos = y._alloc()
+        func(yPos, xPos)
+        y._saveAndFree(yPos)
+        _free(xPos)
+        return y
+      }
+      // func(z, this, y) and return z
+      _op2 (func, y, Cstr = null) {
+        const z = Cstr ? new Cstr() : new this.constructor()
+        const xPos = this._allocAndCopy()
+        const yPos = y._allocAndCopy()
+        const zPos = z._alloc()
+        func(zPos, xPos, yPos)
+        z._saveAndFree(zPos)
+        _free(yPos)
+        _free(xPos)
+        return z
+      }
     }
     exports.SecretKey = class extends Common {
       constructor() {
@@ -354,21 +423,20 @@
         callSetter(mod.sheSecretKeyDeserialize, this.a_, s)
       }
       setByCSPRNG() {
-        let stack = mod.Runtime.stackSave()
-        let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
+        let secPos = mod._malloc(this.a_.length * 4)
         mod._sheSecretKeySetByCSPRNG(secPos)
         copyToUint32Array(this.a_, secPos)
-        mod.Runtime.stackRestore(stack)
+        _free(secPos)
       }
       getPublicKey() {
         let pub = new exports.PublicKey()
-        let stack = mod.Runtime.stackSave()
-        let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
-        let pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
+        let secPos = mod._malloc(this.a_.length * 4)
+        let pubPos = mod._malloc(pub.a_.length * 4)
         copyFromUint32Array(secPos, this.a_)
         mod._sheGetPublicKey(pubPos, secPos)
         copyToUint32Array(pub.a_, pubPos)
-        mod.Runtime.stackRestore(stack)
+        _free(pubPos)
+        _free(secPos)
         return pub
       }
       dec(c) {
@@ -432,11 +500,10 @@
         initialize PrecomputedPublicKey by PublicKey pub
       */
       init(pub) {
-        const stack = mod.Runtime.stackSave()
-        const pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
+        const pubPos = mod._malloc(pub.a_.length * 4)
         copyFromUint32Array(pubPos, pub.a_)
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
-        mod.Runtime.stackRestore(stack)
+        _free(pubPos)
       }
       encG1(m) {
         return callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
@@ -660,13 +727,13 @@
     }
     exports.finalExpGT = function(x) {
       const y = new exports.CipherTextGT()
-      const stack = mod.Runtime.stackSave()
-      const xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
-      const yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
+      const xPos = mod._malloc(x.a_.length * 4)
+      const yPos = mod._malloc(y.a_.length * 4)
       copyFromUint32Array(xPos, x.a_);
       mod._sheFinalExpGT(yPos, xPos)
       copyToUint32Array(y.a_, yPos)
-      mod.Runtime.stackRestore(stack)
+      _free(yPos)
+      _free(xPos)
       return y
     }
     exports.loadTableForG1DLP = (a) => {
