@@ -458,7 +458,7 @@
         } else {
           throw('exports.SecretKey.decViaGT:not supported')
         }
-        return callDec(dec, this.a_, c.a_)
+        return callDec(dec, this, c)
       }
       isZero(c) {
         let isZero = null
