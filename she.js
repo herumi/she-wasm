@@ -134,11 +134,11 @@
     }
     const wrap_dec = function(func) {
       return function(sec, c) {
-        let pos = mod._malloc(4)
-        let r = func(pos, sec, c)
+        const pos = mod._malloc(24) // < 24 returns bat value : QQQ
+        const r = func(pos, sec, c)
         _free(pos)
         if (r != 0) throw('sheDec')
-        let v = mod.HEAP32[pos / 4]
+        const v = mod.HEAP32[pos / 4]
         return v
       }
     }
