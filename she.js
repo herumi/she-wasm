@@ -134,7 +134,7 @@
     }
     const wrap_dec = function(func) {
       return function(sec, c) {
-        let pos = mod._malloc(8)
+        let pos = mod._malloc(4)
         let r = func(pos, sec, c)
         _free(pos)
         if (r != 0) throw('sheDec')
@@ -143,14 +143,12 @@
       }
     }
     const callEnc = function(func, cstr, pub, m) {
-      let c = new cstr()
-      let cPos = mod._malloc(c.a_.length * 4)
-      let pubPos = mod._malloc(pub.length * 4)
-      copyFromUint32Array(pubPos, pub);
+      const c = new cstr()
+      const cPos = c._alloc()
+      const pubPos = pub._allocAndCopy()
       func(cPos, pubPos, m)
-      copyToUint32Array(c.a_, cPos)
       _free(pubPos)
-      _free(cPos)
+      c._saveAndFree(cPos)
       return c
     }
     const callEncWithZkpBin = function(func, cstr, pub, m) {
@@ -236,11 +234,9 @@
     }
     // return func(c)
     const callDec = function(func, sec, c) {
-      let secPos = mod._malloc(sec.length * 4)
-      let cPos = mod._malloc(c.length * 4)
-      copyFromUint32Array(secPos, sec);
-      copyFromUint32Array(cPos, c);
-      let r = func(secPos, cPos)
+      const secPos = sec._allocAndCopy()
+      const cPos = c._allocAndCopy()
+      const r = func(secPos, cPos)
       _free(cPos)
       _free(secPos)
       return r
@@ -442,16 +438,16 @@
       }
       dec(c) {
         let dec = null
-        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+        if (c instanceof exports.CipherTextG1) {
           dec = mod.sheDecG1
-        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+        } else if (c instanceof exports.CipherTextG2) {
           dec = mod.sheDecG2
-        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+        } else if (c instanceof exports.CipherTextGT) {
           dec = mod.sheDecGT
         } else {
           throw('exports.SecretKey.dec:not supported')
         }
-        return callDec(dec, this.a_, c.a_)
+        return callDec(dec, this, c)
       }
       decViaGT(c) {
         let dec = null
@@ -543,13 +539,13 @@
         callSetter(mod.shePublicKeyDeserialize, this.a_, s)
       }
       encG1(m) {
-        return callEnc(mod._sheEncG1, exports.CipherTextG1, this.a_, m)
+        return callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
       }
       encG2(m) {
-        return callEnc(mod._sheEncG2, exports.CipherTextG2, this.a_, m)
+        return callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
       }
       encGT(m) {
-        return callEnc(mod._sheEncGT, exports.CipherTextGT, this.a_, m)
+        return callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
       }
       // return [Enc(m), Zkp]
       encWithZkpBinG1(m) {
