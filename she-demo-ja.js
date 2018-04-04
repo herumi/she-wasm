@@ -38,7 +38,7 @@ function benchAll() {
     const C2 = 10
 //    const L = 16 // large value
     const L = 8 // small value
-    const m = 1 << (L + 1)
+    const m = ((1 << 30) - 1234) * 1
 	bench('EncG1T', C1, () => { pub.encG1(m) })
 	bench('EncG2T', C1, () => { pub.encG2(m) })
 	bench('EncGTT', C2, () => { pub.encGT(m) })
@@ -48,22 +48,22 @@ function benchAll() {
 	const c22 = pub.encG2(m)
 	const ct1 = pub.encGT(m)
 	const ct2 = pub.encGT(m)
-	bench('AddG1T', C1, () => { she.add(c11, c12) })
-	bench('AddG2T', C1, () => { she.add(c21, c22) })
-	bench('AddGTT', C1, () => { she.add(ct1, ct2) })
+	bench('AddG1T', C1 * 10, () => { she.add(c11, c12) })
+	bench('AddG2T', C1 * 10, () => { she.add(c21, c22) })
+	bench('AddGTT', C1 * 10, () => { she.add(ct1, ct2) })
 
 	bench('MulT', C2, () => { she.mul(c11, c21) })
 
-	bench('DecG1T', C2, () => { sec.dec(c11) })
-	bench('DecG2T', C2, () => { sec.dec(c21) })
+//	bench('DecG1T', C2, () => { sec.dec(c11) })
+//	bench('DecG2T', C2, () => { sec.dec(c21) })
 	bench('DecGTT', C2, () => { sec.dec(ct1) })
 
 	bench('DecG1ViaGTT', C2, () => { sec.decViaGT(c11) })
 	bench('DecG2ViaGTT', C2, () => { sec.decViaGT(c21) })
 
-    bench('ReRandG1T', C2, () => { pub.reRand(c11) })
-    bench('ReRandG2T', C2, () => { pub.reRand(c21) })
-    bench('ReRandGTT', C2, () => { pub.reRand(ct1) })
+//    bench('ReRandG1T', C2, () => { ppub.reRand(c11) })
+ //   bench('ReRandG2T', C2, () => { ppub.reRand(c21) })
+  //  bench('ReRandGTT', C2, () => { ppub.reRand(ct1) })
 
     const ppub = new she.PrecomputedPublicKey()
     ppub.init(pub)

@@ -1,6 +1,7 @@
 'use strict'
 const she = require('./she.js')
 const assert = require('assert')
+const { performance } = require('perf_hooks')
 
 she.init()
   .then(() => {
@@ -14,6 +15,7 @@ she.init()
       finalExpTest()
       loadTableTest()
       zkpBinTest()
+      mulIntTest()
       benchmark()
     } catch (e) {
       console.log(`e=${e}`)
@@ -110,13 +112,14 @@ function convertTest () {
 }
 
 function bench (label, count, func) {
-  const start = Date.now()
+  const start = performance.now()
   for (let i = 0; i < count; i++) {
     func()
   }
-  const end = Date.now()
+  const end = performance.now()
   const t = (end - start) / count
-  console.log(label + ' ' + t)
+  const roundTime = (Math.round(t * 1000)) / 1000
+  console.log(label + ' ' + roundTime)
 }
 
 function ppubTest () {
@@ -224,6 +227,20 @@ function zkpBinTest () {
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
   ppub.destroy()
+}
+
+function mulIntTest () {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m1 = 13
+  const m2 = 24
+  const c1 = she.mulInt(pub.encG1(m1), m2)
+  const c2 = she.mulInt(pub.encG2(m1), m2)
+  const ct = she.mulInt(pub.encGT(m1), m2)
+  assert.equal(sec.dec(c1), m1 * m2)
+  assert.equal(sec.dec(c2), m1 * m2)
+  assert.equal(sec.dec(ct), m1 * m2)
 }
 
 function benchmark () {
