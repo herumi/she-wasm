@@ -1,12 +1,12 @@
 'use strict';
-(function (generator) {
+(generator => {
   if (typeof exports === 'object') {
     generator(exports, true)
   } else {
     const exports = {}
     window.she = generator(exports, false)
   }
-})(function (exports, isNodeJs) {
+})((exports, isNodeJs) => {
   /* eslint-disable */
   const MCL_BN254BNb = 0
   const MCL_BN382_1 = 1
@@ -25,10 +25,9 @@
     }
   }
 
-
   const defaultTryNum = 2048
 
-  const setup = function (exports, curveType, range, tryNum) {
+  const setup = (exports, curveType, range, tryNum) => {
     const mod = exports.mod
     const MCLBN_FP_UNIT_SIZE = 4
     const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
@@ -55,17 +54,6 @@
     const asciiStrToPtr = (pos, s) => {
       for (let i = 0; i < s.length; i++) {
         mod.HEAP8[pos + i] = s.charCodeAt(i)
-      }
-    }
-    const copyToUint32Array = function (a, pos) {
-      a.set(mod.HEAP32.subarray(pos / 4, pos / 4 + a.length))
-//    for (let i = 0; i < a.length; i++) {
-//      a[i] = mod.HEAP32[pos / 4 + i]
-//    }
-    }
-    const copyFromUint32Array = function (pos, a) {
-      for (let i = 0; i < a.length; i++) {
-        mod.HEAP32[pos / 4 + i] = a[i]
       }
     }
     exports.toHex = (a, start, n) => {
@@ -177,16 +165,6 @@
       _free(xPos)
       return z
     }
-    // return func(x, y)
-    const callMulInt = (func, cstr, x, y) => {
-      const z = new cstr()
-      const xPos = x._allocAndCopy()
-      const zPos = z._alloc()
-      func(zPos, xPos, y)
-      z._saveAndFree(zPos)
-      _free(xPos)
-      return z
-    }
     // return func((G1)x, (G2)y)
     const callMul = (func, x, y) => {
       if (!exports.CipherTextG1.prototype.isPrototypeOf(x) ||
@@ -201,54 +179,14 @@
       _free(xPos)
       return z
     }
-    // return func(c)
-    const callDec = (func, sec, c) => {
-      const secPos = sec._allocAndCopy()
-      const cPos = c._allocAndCopy()
-      const r = func(secPos, cPos)
-      _free(cPos)
-      _free(secPos)
+    // return func(x, p2)
+    const callDec = (func, x, y) => {
+      const xPos = x._allocAndCopy()
+      const yPos = y._allocAndCopy()
+      const r = func(xPos, yPos)
+      _free(yPos)
+      _free(xPos)
       return r
-    }
-    const callVerify = (func, pub, c, zkp) => {
-      const pubPos = pub._allocAndCopy()
-      const cPos = c._allocAndCopy()
-      const zkpPos = zkp._allocAndCopy()
-      const r = func(pubPos, cPos, zkpPos)
-      _free(zkpPos)
-      _free(cPos)
-      _free(pubPos)
-      return r == 1
-    }
-    const callPPKVerify = (func, pubPos, c, zkp) => {
-      const cPos = c._allocAndCopy()
-      const zkpPos = zkp._allocAndCopy()
-      const r = func(pubPos, cPos, zkpPos)
-      _free(zkpPos)
-      _free(cPos)
-      return r == 1
-    }
-    // reRand(c)
-    const callReRand = (func, c, pub) => {
-      const cPos = c._allocAndCopy()
-      const pubPos = pub._allocAndCopy()
-      const r = func(cPos, pubPos)
-      _free(pubPos)
-      c._saveAndFree(cPos)
-      if (r) throw ('callReRand err')
-    }
-    // convert
-    const callConvert = (func, pub, c) => {
-      const ct = new exports.CipherTextGT()
-      const ctPos = ct._alloc()
-      const pubPos = pub._allocAndCopy()
-      const cPos = c._allocAndCopy()
-      const r = func(ctPos, pubPos, cPos)
-      _free(cPos)
-      _free(pubPos)
-      ct._saveAndFree(ctPos)
-      if (r) throw ('callConvert err')
-      return ct
     }
     const callLoadTable = (func, a) => {
       const p = mod._malloc(a.length)
@@ -256,6 +194,7 @@
         mod.HEAP8[p + i] = a[i]
       }
       const n = func(p, a.length)
+      _free(p)
       if (n == 0) throw ('callLoadTable err')
     }
 
@@ -334,28 +273,6 @@
         _free(xPos)
         return r === 1
       }
-      // func(y, this) and return y
-      _op1 (func) {
-        const y = new this.constructor()
-        const xPos = this._allocAndCopy()
-        const yPos = y._alloc()
-        func(yPos, xPos)
-        y._saveAndFree(yPos)
-        _free(xPos)
-        return y
-      }
-      // func(z, this, y) and return z
-      _op2 (func, y, Cstr = null) {
-        const z = Cstr ? new Cstr() : new this.constructor()
-        const xPos = this._allocAndCopy()
-        const yPos = y._allocAndCopy()
-        const zPos = z._alloc()
-        func(zPos, xPos, yPos)
-        z._saveAndFree(zPos)
-        _free(yPos)
-        _free(xPos)
-        return z
-      }
     }
     exports.SecretKey = class extends Common {
       constructor () {
@@ -425,7 +342,7 @@
       }
     }
 
-    exports.deserializeHexStrToSecretKey = function (s) {
+    exports.deserializeHexStrToSecretKey = s => {
       const r = new exports.SecretKey()
       r.deserializeHexStr(s)
       return r
@@ -447,8 +364,7 @@
         initialize PrecomputedPublicKey by PublicKey pub
       */
       init (pub) {
-        const pubPos = mod._malloc(pub.a_.length * 4)
-        copyFromUint32Array(pubPos, pub.a_)
+        const pubPos = pub._allocAndCopy()
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
         _free(pubPos)
       }
@@ -469,13 +385,21 @@
         return callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m)
       }
       verify (c, zkp) {
+        let verify = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          return callPPKVerify(mod._shePrecomputedPublicKeyVerifyZkpBinG1, this.p, c, zkp)
-        }
+          verify = mod._shePrecomputedPublicKeyVerifyZkpBinG1
+        } else
         if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          return callPPKVerify(mod._shePrecomputedPublicKeyVerifyZkpBinG2, this.p, c, zkp)
+          verify = mod._shePrecomputedPublicKeyVerifyZkpBinG2
+        } else {
+          throw ('exports.verify:bad type')
         }
-        throw ('exports.verify:bad type')
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = verify(this.p, cPos, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        return r == 1
       }
     }
     exports.PublicKey = class extends Common {
@@ -505,38 +429,62 @@
         return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
       }
       verify (c, zkp) {
+        let func = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          return callVerify(mod._sheVerifyZkpBinG1, this, c, zkp)
-        }
+          func = mod._sheVerifyZkpBinG1
+        } else
         if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          return callVerify(mod._sheVerifyZkpBinG2, this, c, zkp)
+          func = mod._sheVerifyZkpBinG2
+        } else {
+          throw ('exports.verify:bad type')
         }
-        throw ('exports.verify:bad type')
+        const pubPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = func(pubPos, cPos, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        _free(pubPos)
+        return r == 1
       }
       reRand (c) {
-        let reRand = null
+        let func = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          reRand = mod._sheReRandG1
+          func = mod._sheReRandG1
         } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          reRand = mod._sheReRandG2
+          func = mod._sheReRandG2
         } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
-          reRand = mod._sheReRandGT
+          func = mod._sheReRandGT
         } else {
           throw ('exports.PublicKey.reRand:not supported')
         }
-        return callReRand(reRand, c, this)
+        const cPos = c._allocAndCopy()
+        const pubPos = this._allocAndCopy()
+        const r = func(cPos, pubPos)
+        _free(pubPos)
+        c._saveAndFree(cPos)
+        if (r) throw ('reRand err')
       }
       // convert to CipherTextGT
       convert (c) {
-        let convert = null
+        let func = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          convert = mod._sheConvertG1
+          func = mod._sheConvertG1
         } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          convert = mod._sheConvertG2
+          func = mod._sheConvertG2
         } else {
           throw ('exports.PublicKey.convert:not supported')
         }
-        return callConvert(convert, this, c)
+        const ct = new exports.CipherTextGT()
+        const ctPos = ct._alloc()
+        const pubPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const r = func(ctPos, pubPos, cPos)
+        _free(cPos)
+        _free(pubPos)
+        ct._saveAndFree(ctPos)
+        if (r) throw ('callConvert err')
+        return ct
       }
     }
 
@@ -610,7 +558,7 @@
       return r
     }
     // return x + y
-    exports.add = function (x, y) {
+    exports.add = (x, y) => {
       if (x.a_.length != y.a_.length) throw ('exports.add:bad type')
       let add = null
       let cstr = null
@@ -629,7 +577,7 @@
       return callAddSub(add, cstr, x, y)
     }
     // return x - y
-    exports.sub = function (x, y) {
+    exports.sub = (x, y) => {
       if (x.a_.length != y.a_.length) throw ('exports.sub:bad type')
       let sub = null
       let cstr = null
@@ -648,38 +596,41 @@
       return callAddSub(sub, cstr, x, y)
     }
     // return x * (int)y
-    exports.mulInt = function (x, y) {
-      let mulInt = null
-      let cstr = null
+    exports.mulInt = (x, y) => {
+      let func = null
+      let z = null
       if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMulG1
-        cstr = exports.CipherTextG1
+        func = mod._sheMulG1
+        z = new exports.CipherTextG1()
       } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMulG2
-        cstr = exports.CipherTextG2
+        func = mod._sheMulG2
+        z = new exports.CipherTextG2()
       } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
-        mulInt = mod._sheMulGT
-        cstr = exports.CipherTextGT
+        func = mod._sheMulGT
+        z = new exports.CipherTextGT()
       } else {
         throw ('exports.mulInt:not supported')
       }
-      return callMulInt(mulInt, cstr, x, y)
+      const zPos = z._alloc()
+      const xPos = x._allocAndCopy()
+      func(zPos, xPos, y)
+      _free(xPos)
+      z._saveAndFree(zPos)
+      return z
     }
     // return (G1)x * (G2)y
     exports.mul = (x, y) => {
       return callMul(mod._sheMul, x, y)
     }
-    exports.mulML = function (x, y) {
+    exports.mulML = (x, y) => {
       return callMul(mod._sheMulML, x, y)
     }
     exports.finalExpGT = x => {
       const y = new exports.CipherTextGT()
-      const xPos = mod._malloc(x.a_.length * 4)
-      const yPos = mod._malloc(y.a_.length * 4)
-      copyFromUint32Array(xPos, x.a_)
+      const xPos = x._allocAndCopy()
+      const yPos = y._alloc()
       mod._sheFinalExpGT(yPos, xPos)
-      copyToUint32Array(y.a_, yPos)
-      _free(yPos)
+      y._saveAndFree(yPos)
       _free(xPos)
       return y
     }

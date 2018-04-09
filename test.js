@@ -18,7 +18,8 @@ she.init()
       mulIntTest()
       benchmark()
     } catch (e) {
-      console.log(`e=${e}`)
+      console.log(`TEST FAIL ${e}`)
+      assert(false)
     }
   })
 
@@ -179,22 +180,23 @@ function loadTableTest () {
   try {
     she.loadTableForGTDLP(fs.readFileSync(DLPtable))
     console.log(`use ${DLPtable} for DLP`)
-    {
-      const m = 0x7fffffff
-      console.log(`m=${m}`)
-      const ct = pub.encGT(m)
-      assert.equal(sec.dec(ct), m)
-      bench('decGT', 10, () => sec.dec(ct))
-    }
-    {
-      const m = -0x7fffffff - 1
-      console.log(`m=${m}`)
-      const ct = pub.encGT(m)
-      assert.equal(sec.dec(ct), m)
-    }
   } catch (e) {
     console.log(`${e} is not found`)
     console.log(`curl -O https://herumi.github.io/she-dlp-table/${DLPtable}`)
+    return
+  }
+  {
+    const m = 0x7fffffff
+    console.log(`m=${m}`)
+    const ct = pub.encGT(m)
+    assert.equal(sec.dec(ct), m)
+    bench('decGT', 10, () => sec.dec(ct))
+  }
+  {
+    const m = -0x7fffffff - 1
+    console.log(`m=${m}`)
+    const ct = pub.encGT(m)
+    assert.equal(sec.dec(ct), m)
   }
 }
 
@@ -208,7 +210,7 @@ function zkpBinTestSub (sec, pub, encWithZkpBin) {
     assert(!pub.verify(c, zkp))
   }
   try {
-    const [c, zkp] = pub[encWithZkpBin](2)
+    pub[encWithZkpBin](2)
     assert(false)
   } catch (e) {
     assert(true)
