@@ -6,7 +6,10 @@
 see [mcl](https://github.com/herumi/mcl) and [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
 
 # for Node.js
-node test.js
+
+```
+node test
+```
 
 # How to build
 Install [emsdk](https://github.com/juj/emsdk.git)
@@ -18,7 +21,7 @@ git clone git@github.com:herumi/mcl
 git clone git@github.com:herumi/cybozulib
 git clone git@github.com:herumi/she-wasm
 cd mcl
-make ../she-wasm/she_c.js
+make she-wasm
 ```
 
 # License
