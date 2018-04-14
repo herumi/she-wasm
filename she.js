@@ -1,6 +1,9 @@
 'use strict';
 (generator => {
   if (typeof exports === 'object') {
+    // necessary to use /dev/urandom
+    const crypto = require('crypto')
+    crypto.getRandomValues = crypto.randomFillSync
     generator(exports, true)
   } else {
     const exports = {}
