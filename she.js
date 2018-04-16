@@ -11,17 +11,17 @@
   }
 })((exports, isNodeJs) => {
   /* eslint-disable */
-  const MCL_BN254BNb = 0
-  const MCL_BN382_1 = 1
-  const MCL_BN382_2 = 2
-  const MCL_BN462 = 3
-  const MCL_BN_SNARK1 = 4
-  const MCL_BLS12_381 = 5
+  exports.BN254 = 0
+  exports.BN382_1 = 1
+  exports.BN382_2 = 2
+  exports.BN462 = 3
+  exports.BN_SNARK1 = 4
+  exports.BLS12_381 = 5
   /* eslint-disable */
   const getUnitSize = curveType => {
     switch (curveType) {
-    case MCL_BN254BNb:
-    case MCL_BN_SNARK1:
+    case exports.BN254:
+    case exports.BN_SNARK1:
       return 4; /* use mcl_c.js */
     default:
       throw new Error(`QQQ bad curveType=${curveType}`)
@@ -665,12 +665,19 @@
   } // setup()
   /*
     init she
+    @param curveType
     @param range [in] table size of DLP ; require 8 * table size
     @param tryNum [in] how many search ; O(tryNum) time
     can decrypt (range * tryNum) range value
   */
-  exports.init = (range = 1024, tryNum = defaultTryNum) => {
-    const curveType = MCL_BN254BNb
+  exports.init = (curveType = exports.BN254, range = 1024, tryNum = defaultTryNum) => {
+    if (curveType > 8) {
+      console.log('WARNING : init(range, tryNum) is deprecated. use init(curveType, range, tryNum)')
+      tryNum = range
+      range = curveType
+      curveType = exports.BN254
+    }
+    exports.curveType = curveType
     const name = 'she_c'
     return new Promise(resolve => {
       if (isNodeJs) {

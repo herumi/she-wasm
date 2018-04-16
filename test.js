@@ -3,7 +3,7 @@ const she = require('./she.js')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
-she.init()
+she.init(she.BN254, 256)
   .then(() => {
     try {
       minimumTest()
@@ -178,6 +178,7 @@ function loadTableTest () {
   console.log('load table')
   const DLPtable = 'she-dlp-0-20-gt.bin'
   try {
+    if (she.curveType !== she.BN254) return
     she.loadTableForGTDLP(fs.readFileSync(DLPtable))
     console.log(`use ${DLPtable} for DLP`)
   } catch (e) {
