@@ -52,13 +52,19 @@ function encDecTest () {
     assert.equal(sec.dec(c1), m)
     assert.equal(sec.decViaGT(c1), m)
     assert.equal(sec.isZero(c1), m === 0)
+    const n1 = she.neg(c1)
+    assert.equal(sec.dec(n1), -m)
     const c2 = pub.encG2(m)
     assert.equal(sec.dec(c2), m)
     assert.equal(sec.decViaGT(c2), m)
     assert.equal(sec.isZero(c2), m === 0)
+    const n2 = she.neg(c2)
+    assert.equal(sec.dec(n2), -m)
     const ct = pub.encGT(m)
     assert.equal(sec.dec(ct), m)
     assert.equal(sec.isZero(ct), m === 0)
+    const nt = she.neg(ct)
+    assert.equal(sec.dec(nt), -m)
   }
 }
 

@@ -11,6 +11,9 @@ see [mcl](https://github.com/herumi/mcl) and [she demo on browser](https://herum
 node test
 ```
 
+# Doc
+[she-api-ja](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
+
 # How to build
 Install [emsdk](https://github.com/juj/emsdk.git)
 

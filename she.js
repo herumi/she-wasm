@@ -560,6 +560,29 @@
       r.deserializeHexStr(s)
       return r
     }
+    // return -x
+    exports.neg = x => {
+      let func = null
+      let y = null
+      if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
+        func = mod._sheNegG1
+        y = new exports.CipherTextG1()
+      } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
+        func = mod._sheNegG2
+        y = new exports.CipherTextG2()
+      } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
+        func = mod._sheNegGT
+        y = new exports.CipherTextGT()
+      } else {
+        throw ('exports.neg:not supported')
+      }
+      const xPos = x._allocAndCopy()
+      const yPos = y._alloc()
+      func(yPos, xPos)
+      y._saveAndFree(yPos)
+      _free(xPos)
+      return y
+    }
     // return x + y
     exports.add = (x, y) => {
       if (x.a_.length != y.a_.length) throw ('exports.add:bad type')
