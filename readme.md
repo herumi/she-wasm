@@ -12,7 +12,7 @@ node test
 ```
 
 # Doc
-[she-api-ja](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
+[she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # How to build
 Install [emsdk](https://github.com/juj/emsdk.git)
