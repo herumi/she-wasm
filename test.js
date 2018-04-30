@@ -3,6 +3,7 @@ const she = require('./she.js')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
+//she.init(she.BLS12_381, 256)
 she.init(she.BN254, 256)
   .then(() => {
     try {
@@ -208,6 +209,7 @@ function loadTableTest () {
 }
 
 function zkpBinTestSub (sec, pub, encWithZkpBin) {
+  console.log(`zkpBinTestSub ${encWithZkpBin}`)
   for (let m = 0; m < 2; m++) {
     const [c, zkp] = pub[encWithZkpBin](m)
     assert.equal(sec.dec(c), m)

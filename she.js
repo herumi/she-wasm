@@ -12,8 +12,8 @@
 })((exports, isNodeJs) => {
   /* eslint-disable */
   exports.BN254 = 0
-  exports.BN382_1 = 1
-  exports.BN382_2 = 2
+  exports.BN381_1 = 1
+  exports.BN381_2 = 2
   exports.BN462 = 3
   exports.BN_SNARK1 = 4
   exports.BLS12_381 = 5
@@ -22,7 +22,11 @@
     switch (curveType) {
     case exports.BN254:
     case exports.BN_SNARK1:
-      return 4; /* use mcl_c.js */
+      return 4;
+    case exports.BN381_1:
+    case exports.BN381_2:
+    case exports.BLS12_381:
+      return 6;
     default:
       throw new Error(`QQQ bad curveType=${curveType}`)
     }
@@ -32,7 +36,7 @@
 
   const setup = (exports, curveType, range, tryNum) => {
     const mod = exports.mod
-    const MCLBN_FP_UNIT_SIZE = 4
+    const MCLBN_FP_UNIT_SIZE = getUnitSize(curveType)
     const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
     const MCLBN_G1_SIZE = MCLBN_FP_SIZE * 3
     const MCLBN_G2_SIZE = MCLBN_FP_SIZE * 6
@@ -83,10 +87,10 @@
 
     const _wrapGetStr = (func, returnAsStr = true) => {
       return (x, ioMode = 0) => {
-        const maxBufSize = 2048
+        const maxBufSize = 3096
         const pos = mod._malloc(maxBufSize)
         const n = func(pos, maxBufSize, x, ioMode)
-        if (n < 0) {
+        if (n <= 0) {
           throw new Error('err gen_str:' + x)
         }
         let s = null
