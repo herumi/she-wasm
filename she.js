@@ -22,11 +22,11 @@
     switch (curveType) {
     case exports.BN254:
     case exports.BN_SNARK1:
-      return 4;
+      return 4; /* use she_c.js */
     case exports.BN381_1:
     case exports.BN381_2:
     case exports.BLS12_381:
-      return 6;
+      return 6; /* use she_c384.js */
     default:
       throw new Error(`QQQ bad curveType=${curveType}`)
     }
@@ -120,11 +120,12 @@
     }
     const wrap_dec = func => {
       return function (sec, c) {
-        const pos = mod._malloc(24) // < 24 returns bat value : QQQ
+        const pos = mod._malloc(8)
         const r = func(pos, sec, c)
+        const v = mod.HEAP32[pos / 4]
         _free(pos)
-        if (r != 0) throw ('sheDec')
-        return mod.HEAP32[pos / 4]
+        if (r) throw ('sheDec')
+        return v
       }
     }
     const callEnc = (func, cstr, pub, m) => {
@@ -156,8 +157,9 @@
     const callPPKEnc = (func, cstr, ppub, m) => {
       const c = new cstr()
       const cPos = c._alloc()
-      func(cPos, ppub, m)
+      const r = func(cPos, ppub, m)
       c._saveAndFree(cPos)
+      if (r) throw ('callPPKEnc:' + m)
       return c
     }
     // return func(x, y)
@@ -705,7 +707,7 @@
       curveType = exports.BN254
     }
     exports.curveType = curveType
-    const name = 'she_c'
+    const name = getUnitSize(curveType) == 4 ? 'she_c' : 'she_c384'
     return new Promise(resolve => {
       if (isNodeJs) {
         const path = require('path')

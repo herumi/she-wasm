@@ -3,26 +3,37 @@ const she = require('./she.js')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
-//she.init(she.BLS12_381, 256)
-she.init(she.BN254, 256)
-  .then(() => {
-    try {
-      minimumTest()
-      encDecTest()
-      serializeTest()
-      rerandTest()
-      convertTest()
-      ppubTest()
-      finalExpTest()
-      loadTableTest()
-      zkpBinTest()
-      mulIntTest()
-      benchmark()
-    } catch (e) {
-      console.log(`TEST FAIL ${e}`)
-      assert(false)
-    }
-  })
+const curveTest = (curveType, name) => {
+  she.init(curveType)
+    .then(() => {
+      try {
+        console.log(`name=${name}`)
+        minimumTest()
+        encDecTest()
+        serializeTest()
+        rerandTest()
+        convertTest()
+        ppubTest()
+        finalExpTest()
+        loadTableTest()
+        zkpBinTest()
+        mulIntTest()
+        benchmark()
+      } catch (e) {
+        console.log(`TEST FAIL ${e}`)
+        assert(false)
+      }
+    })
+}
+
+async function curveTestAll () {
+  // can't parallel
+  await curveTest(she.BN254, 'BN254')
+  await curveTest(she.BN381_1, 'BN381_1')
+  await curveTest(she.BLS12_381, 'BLS12_381')
+}
+
+curveTestAll()
 
 function minimumTest () {
   const sec = new she.SecretKey()
