@@ -12,7 +12,17 @@
 <body>
 
 <h1>内積の秘匿計算デモ</h1>
-<h3>ライブラリ：</h3><span name="status">初期化中</span>
+<h3>
+<form name="selectCurve">
+pairing parameter : <select name="curveType" onChange="onChangeSelectCurve()">
+<option value="0" selected>BN254</option>
+<option value="1">BN381_1</option>
+<option value="5">BLS12_381</option>
+</select>
+ライブラリ：<span name="status">初期化中</span>
+</form>
+</h3>
+<button type="button" onclick="clearTable()">clear table</button>
 
 <h2>データ提供者</h2>
 <h3>秘密鍵：</h3><span name="sec" class="hex"></span>
@@ -33,7 +43,7 @@
 
 <table border=1 id="server_table" width="100%" summary="server">
 </table>
-<button type="button" onclick="mul_sum()">暗号文のまま各行の積を取りその値を集計する</button><br>
+<button type="button" onclick="mulSum()">暗号文のまま各行の積を取りその値を集計する</button><br>
 <h3>集計結果：</h3><span name="encSumS" class="hex">0</span>
 <br>
 <button type="button" onclick="recv()">クライアントに送信する</button>

@@ -11,9 +11,15 @@
 </head>
 <body>
 <h1>Two-level Homomorphic Encryption demo</h1>
-<div>
+<form name="selectCurve">
+pairing parameter : <select name="curveType" onChange="onChangeSelectCurve()">
+<option value="0" selected>BN254</option>
+<option value="1">BN381_1</option>
+<option value="5">BLS12_381</option>
+</select>
 library status <span name="status">initializing...</span>
-</div>
+</form>
+<button type="button" onclick="clearTable()">clear table</button>
 
 <div id="left">
 <h2>Client</h2>
