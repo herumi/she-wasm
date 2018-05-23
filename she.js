@@ -49,7 +49,7 @@
     const SHE_ZKPBIN_SIZE = MCLBN_FP_SIZE * 4
 
     const _free = pos => {
-      mod._free(pos)
+      mod._mclBnFree(pos)
     }
     const ptrToAsciiStr = (pos, n) => {
       let s = ''
@@ -116,7 +116,7 @@
       }
     }
     exports.free = x => {
-      mod._free(x)
+      _free(x)
     }
     const wrap_dec = func => {
       return function (sec, c) {
