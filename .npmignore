@@ -7,3 +7,4 @@ she-demo.js
 style.css
 she-dlp-0-20-gt.bin
 .travis.yml
+node_modules

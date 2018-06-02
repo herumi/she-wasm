@@ -12,6 +12,7 @@ node test
 ```
 
 # Doc
+[she-api](https://github.com/herumi/mcl/blob/master/misc/she/she-api.md)
 [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # How to build
