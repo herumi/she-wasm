@@ -108,6 +108,8 @@ function benchAll () {
 //  bench('DecG1T', C2, () => { sec.dec(c11) })
 //  bench('DecG2T', C2, () => { sec.dec(c21) })
   bench('DecGTT', C2, () => { sec.dec(ct1) })
+  const cts = pub.encGT(1234)
+  bench('DecGTsT', C2, () => { sec.dec(cts) })
 
   bench('DecG1ViaGTT', C2, () => { sec.decViaGT(c11) })
   bench('DecG2ViaGTT', C2, () => { sec.decViaGT(c21) })
