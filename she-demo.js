@@ -23,22 +23,35 @@ function loadScript (url, callback) {
 let sec = null
 let pub = null
 
+function setTableHeader(obj, header) {
+  obj.html('')
+  let t = $('<tr>').attr('id', 'header')
+  for (let i = 0; i < header.length; i++) {
+    t.append(
+      $('<th>').append(header[i])
+    )
+  }
+  obj.append(t)
+}
+
 function clearTable () {
-  $('#client_table').html('')
-  $('#server_table').html('')
+  setTableHeader($('#client_table'), ['x', 'y', 'EncG1(x)', 'EncG2(y)'])
+  setTableHeader($('#server_table'), ['EncG1(x)', 'EncG2(y)', 'EncGT(x * y)'])
 }
 
 function initShe (curveType) {
   const initSecPub = () => {
-    clearTable()
     sec = new she.SecretKey()
     sec.setByCSPRNG()
     sec.dump('sec=')
+    setText('sec', sec.serializeToHexStr())
     pub = sec.getPublicKey()
     pub.dump('pub=')
+    setText('pub', pub.serializeToHexStr())
     console.log(`curveType=${curveType}`)
     setText('status', `curveType=${curveType} status ok`)
   }
+  clearTable()
   setText('status', `curveType=${curveType} status initializing...`)
   she.init(curveType).then(() => {
     if (curveType == she.BN254) {
@@ -105,19 +118,6 @@ function send () {
     ct2.push($(this).text())
   })
   let obj = $('#server_table')
-  obj.html('')
-  {
-    let header = [
-      'EncG1(x)', 'EncG2(y)', 'EncGT(x * y)'
-    ]
-    let t = $('<tr>').attr('id', 'header')
-    for (let i = 0; i < header.length; i++) {
-      t.append(
-        $('<th>').append(header[i])
-      )
-    }
-    obj.append(t)
-  }
   for (let i = 0; i < ct1.length; i++) {
     let t = $('<tr>')
     t.append(
