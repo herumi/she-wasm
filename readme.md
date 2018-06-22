@@ -12,8 +12,11 @@ node test
 ```
 
 # Doc
-[she-api](https://github.com/herumi/mcl/blob/master/misc/she/she-api.md)
-[she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
+* [slide for ASIA CCS 2018 in English](https://www.slideshare.net/herumi/efficient-twolevel-homomorphic-encryption-in-primeorder-bilinear-groups-and-a-fast-implementation-in-webassembly)
+    * [ASIA CCS 2018 accepted paper](http://asiaccs2018.org/?page_id=632)
+* [slide for SCIS 2018 in Japanese](https://www.slideshare.net/herumi/2scis2018)
+* [she-api](https://github.com/herumi/mcl/blob/master/misc/she/she-api.md)
+* [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # How to build
 Install [emsdk](https://github.com/juj/emsdk.git)
