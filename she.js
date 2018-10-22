@@ -37,6 +37,8 @@
   const setup = (exports, curveType, range, tryNum) => {
     const mod = exports.mod
     const MCLBN_FP_UNIT_SIZE = getUnitSize(curveType)
+    const MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE
+    const MCLBN_COMPILED_TIME_VAR = (MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE)
     const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
     const MCLBN_G1_SIZE = MCLBN_FP_SIZE * 3
     const MCLBN_G2_SIZE = MCLBN_FP_SIZE * 6
@@ -684,7 +686,7 @@
     exports.useDecG2ViaGT = (use = 1) => {
       mod._sheUseDecG2ViaGT(use)
     }
-    const r1 = mod._sheInit(curveType, MCLBN_FP_UNIT_SIZE)
+    const r1 = mod._sheInit(curveType, MCLBN_COMPILED_TIME_VAR)
     if (r1) throw ('_sheInit err')
     console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
     const r2 = mod._sheSetRangeForDLP(range)
