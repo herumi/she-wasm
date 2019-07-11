@@ -91,6 +91,11 @@ function appendRand () {
 
 function send () {
   const ct1 = []
+  /*
+  document.querySelectorAll('.encG1x').forEach((e) => {
+    ct1.push(e.innerText)
+  })
+  */
   $('.encG1x').each(function () {
     ct1.push($(this).text())
   })
@@ -114,8 +119,8 @@ function send () {
 }
 
 function mulXY () {
-  let xSum = pub.encG1()
-  let ySum = pub.encG2()
+  let xSum = pub.encG1(0)
+  let ySum = pub.encG2(0)
   $('.encG1xS').each(function () {
     const o = $(this)
     const c1 = she.deserializeHexStrToCipherTextG1(o.text())
