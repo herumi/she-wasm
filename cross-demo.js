@@ -75,7 +75,11 @@ function append () {
   const vs = v.split(',')
   const x = parseInt(vs[0])
   const y = parseInt(vs[1])
-  appendXY(x, y)
+  if ((x in [0,1] && y in [0, 1])) {
+    appendXY(x, y)
+  } else {
+    alert(`x=${x} and y=${y} must be in [0,1]`)
+  }
 }
 
 function appendRand () {
