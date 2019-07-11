@@ -1,0 +1,290 @@
+span {
+  max-width: 30vw;
+  display: inline-block;
+  overflow: hidden;
+}
+
+thead {
+  background-color: #e3e3e3;
+}
+
+td {
+  text-align: center;
+  max-width: 100px;
+  overflow: hidden;
+}
+
+table {
+  border: solid 1px #000;
+  width: 100%;
+  background-color: #f3f3f3;
+  table-layout: fixed;
+}
+
+h3 {
+  display: flex;
+  align-items: center;
+}
+
+input {
+  color: #aaa;
+  border: solid 1px #ccc;
+  margin: 8px;
+}
+
+.cross-add-xy-box {
+  display: flex;
+}
+
+.cross-add-xy {
+  width: 64px;
+}
+
+.cross-key {
+  border: solid 1px #ccc;
+  height: 32px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.cross-button {
+  display: inline-block;
+  padding: 0.3em 1em;
+  text-decoration: none;
+  border: solid 2px #333;
+  border-radius: 3px;
+  transition: .4s;
+  background: #333;
+  color: white;
+  margin: 8px;
+}
+
+.cross-button:hover {
+  background: gray;
+  color: white;
+}
+
+.cross-status {
+  display: flex;
+  margin-left: 8px;
+}
+
+.cross-status-span {
+  display: block;
+  margin-left: 8px;
+}
+
+.cross-panel-double-wrap {
+  width: 100%;
+  display: flex;
+}
+
+.cross-panel-wrap {
+  margin: 8px;
+  width: auto;
+  border: solid 3px #d8d8d8;
+  padding: 16px;
+  min-height: 200px
+}
+
+.cross-header {
+  display: flex;
+}
+
+.cross-panel-double-wrap div {
+  width: 100%;
+}
+
+@media screen and (max-width: 1024px) {
+  span {
+    max-width: 70vw;
+  }
+
+  .cross-panel-double-wrap {
+    display: block;
+  }
+
+  .cross-panel-double-wrap div {
+    width: auto;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  span {
+    max-width: 45vw;
+  }
+
+  .cross-h1 {
+    font-size: 1.4rem;
+  }
+
+  .cross-h2 {
+    font-size: 1.2rem;
+  }
+
+  .advanced-tab-container .advanced-tab {
+    font-size: 0.8rem;
+    padding: 8px;
+  }
+
+  .designportal-advanced .advanced-panel-contents {
+    padding: 8px;
+  }
+
+  body .designportal-advanced {
+    padding: 8px;
+  }
+
+  .cross-header {
+    display: block;
+  }
+}
+
+ body, h1,
+ h2, h3, h4,
+ p,
+ td,
+ th,
+ ul, dl, dd, dt, ol, button {
+   margin: 0;
+   padding: 0;
+ }
+
+ body {
+   background: #d8d8d8;
+ }
+
+ .designportal-advanced {
+   display: block;
+   position: relative;
+   padding: 32px;
+ }
+
+ .designportal-advanced .advanced-panel--active {
+   background-color: #ffffff;
+   color: #333333;
+   z-index: 2;
+ }
+
+ .designportal-advanced .advanced-container {
+   margin: 0 auto;
+   width: 100%;
+ }
+
+ .designportal-advanced .advanced-tab-container {
+   display: flex;
+   list-style-type: none;
+   text-align: center;
+   margin: 0 10px 0 10px;
+   color: #333333;
+ }
+
+ @media screen and (max-width: 576px) {
+   .designportal-advanced .advanced-tab-container {
+     margin: 0 10px;
+   }
+ }
+
+ .designportal-advanced .advanced-tab {
+   display: block;
+   flex: 1;
+   width: 100%;
+   margin-right: 20px;
+   align-content: stretch;
+   padding: 15px 10px;
+   position: relative;
+   font-size: 1.2rem;
+   border-top-left-radius: 5px;
+   border-top-right-radius: 5px;
+   background-color: #333333;
+   border: 2px solid #333333;
+   color: #ffffff;
+   cursor: pointer;
+   outline: none;
+ }
+
+ .designportal-advanced .advanced-tab:last-child {
+   margin-right: 0;
+ }
+
+ .designportal-advanced .advanced-tab:hover {
+   background-color: #666666;
+   border: 2px solid #666666;
+   color: #ffffff;
+ }
+
+ .designportal-advanced .advanced-tab:focus {
+   border: 2px solid #3498db;
+   background-color: #666666;
+   color: #ffffff;
+ }
+
+ @media screen and (max-width: 1024px) {
+   .designportal-advanced .advanced-tab {
+     font-size: 1.2rem;
+   }
+ }
+
+ @media screen and (max-width: 576px) {
+   .designportal-advanced .advanced-tab {
+     margin-right: 10px;
+   }
+ }
+
+ .designportal-advanced .advanced-tab--active {
+   background-color: #ffffff;
+   border: 2px solid #ffffff;
+   color: #333333;
+ }
+
+ .designportal-advanced .advanced-panel-container {
+   display: block;
+   position: relative;
+   margin: 0 10px 30px;
+   background-color: #ffffff;
+   border-bottom-left-radius: 5px;
+   border-bottom-right-radius: 5px;
+ }
+
+ .designportal-advanced .advanced-panel-contents {
+   display: none;
+   padding: 40px;
+   clear: both;
+   overflow: hidden;
+   color: #333333;
+ }
+
+ @media screen and (max-width: 1024px) {
+   .designportal-advanced .advanced-panel-contents {
+     padding: 20px;
+   }
+ }
+
+ .designportal-advanced .advanced-panel-contents--active {
+   overflow: hidden;
+   display: block;
+ }
+
+ .designportal-advanced .advanced-heading1 {
+   font-size: 2rem;
+   font-weight: bold;
+   margin-bottom: 20px;
+ }
+
+ @media screen and (max-width: 1024px) {
+   .designportal-advanced .advanced-heading1 {
+     font-size: 2.6rem;
+   }
+ }
+
+ .designportal-advanced .advanced-heading2 {
+   font-size: 1.5rem;
+   font-weight: bold;
+   margin-bottom: 20px;
+ }
+
+ @media screen and (max-width: 1024px) {
+   .designportal-advanced .advanced-heading2 {
+     /* font-size: 2rem; */
+   }
+ }
