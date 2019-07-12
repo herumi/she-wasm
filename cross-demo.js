@@ -83,10 +83,11 @@ function append () {
 }
 
 function appendRand () {
-  const tbl = [
-    [1, 0], [1, 1], [0, 0], [0, 1], [1, 0], [0, 1], [1, 1], [1, 0], [0, 0],
-  ]
-  tbl.forEach(p => appendXY(p[0], p[1]))
+  for (let i = 0; i < 10; i++) {
+    const x = (Math.random() * 2) | 0
+    const y = (Math.random() * 2) | 0
+    appendXY(x, y)
+  }
 }
 
 function send () {
