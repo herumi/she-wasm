@@ -10,12 +10,6 @@ function clearTable () {
   $('#client_table').html('')
   $('#server_table').html('')
   $('#cross_table').html('')
-  setText('encXsumS', '')
-  setText('encYsumS', '')
-  setText('encSumS', '')
-  setText('encXsumC', '')
-  setText('encYsumC', '')
-  setText('encSumC', '')
 }
 
 function handleClick (ev) {
