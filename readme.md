@@ -3,7 +3,12 @@
 
 # Abstract
 
-see [mcl](https://github.com/herumi/mcl) and [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
+see [mcl](https://github.com/herumi/mcl)
+
+# Demo
+
+* [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
+* [cross tabulation demo (Japanese)](https://herumi.github.io/she-wasm/cross-demo-ja.html)
 
 # for Node.js
 
