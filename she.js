@@ -250,6 +250,10 @@
 		mod.sheZkpBinDeserialize = _wrapDeserialize(mod._sheZkpBinDeserialize)
 		mod.sheZkpDecSerialize = _wrapSerialize(mod._sheZkpDecSerialize)
 		mod.sheZkpDecDeserialize = _wrapDeserialize(mod._sheZkpDecDeserialize)
+		mod.sheZkpBinEqSerialize = _wrapSerialize(mod._sheZkpBinEqSerialize)
+		mod.sheZkpBinEqDeserialize = _wrapDeserialize(
+			mod._sheZkpBinEqDeserialize,
+		)
 
 		class Common {
 			constructor(size) {
@@ -702,6 +706,18 @@
 			}
 			deserialize(s) {
 				this._setter(mod.sheZkpBinDeserialize, s)
+			}
+		}
+
+		exports.ZkpBinEq = class extends Common {
+			constructor() {
+				super(SHE_ZKPBIN_SIZE * 2)
+			}
+			serialize() {
+				return this._getter(mod.sheZkpBinEqSerialize)
+			}
+			deserialize(s) {
+				this._setter(mod.sheZkpBinEqDeserialize, s)
 			}
 		}
 

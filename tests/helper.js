@@ -236,6 +236,23 @@ function zkpBinTestSub(sec, pub, encWithZkpBin) {
 	}
 }
 
+function zkpBinTestEqSub(sec, pub, encWithZkpBin) {
+	for (let m = 0; m < 2; m++) {
+		const [c1, c2, zkp] = pub[encWithZkpBin](m)
+		expect(sec.dec(c1)).toEqual(m)
+		expect(sec.dec(c2)).toEqual(m)
+		expect(pub.verifyEq(c1, c2, zkp)).toBeTruthy()
+		const [c3, c4] = pub[encWithZkpBin](m)
+		expect(pub.verifyEq(c3, c4, zkp)).toBeFalsy()
+	}
+	try {
+		pub[encWithZkpBin](2)
+		fail()
+	} catch (e) {
+		expect(e).toBeDefined()
+	}
+}
+
 function zkpBinTest() {
 	it('should handle zkp bin', () => {
 		const sec = new she.SecretKey()
@@ -248,6 +265,18 @@ function zkpBinTest() {
 		ppub.init(pub)
 		zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
 		zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
+		ppub.destroy()
+	})
+
+	it('should handle zkp bin eq', () => {
+		const sec = new she.SecretKey()
+		sec.setByCSPRNG()
+		const pub = sec.getPublicKey()
+		zkpBinTestEqSub(sec, pub, 'encWithZkpBinEq')
+
+		const ppub = new she.PrecomputedPublicKey()
+		ppub.init(pub)
+		zkpBinTestEqSub(sec, pub, 'encWithZkpBinEq')
 		ppub.destroy()
 	})
 }
