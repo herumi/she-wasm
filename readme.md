@@ -16,8 +16,25 @@ see [mcl](https://github.com/herumi/mcl)
 
 # for Node.js
 
+###Install
+
 ```
-node test
+npm i
+```
+
+###Full test
+```
+npm run test
+```
+
+###Dev and test on one file
+```
+npm run dev BLS12
+```
+
+###Lint
+```
+npm run lint
 ```
 
 # Doc

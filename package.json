@@ -5,12 +5,17 @@
   "main": "she.js",
   "scripts": {
     "test": "jest --coverage",
-    "dev":  "jest --watch",
+    "dev": "jest --watch",
     "lint": "prettier --write **/**.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/herumi/she-wasm.git"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged --pattern **/**.js"
+    }
   },
   "keywords": [
     "homomorphic encrpytion",
@@ -27,8 +32,10 @@
   },
   "homepage": "https://github.com/herumi/she-wasm#readme",
   "devDependencies": {
+    "husky": "^4.3.0",
     "jest": "^26.6.3",
     "prettier": "^2.1.2",
+    "pretty-quick": "^3.1.0",
     "standard": "^10.0.3"
   }
 }
