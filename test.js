@@ -9,6 +9,7 @@ const curveTest = (curveType, name) => {
       try {
         console.log(`name=${name}`)
         minimumTest()
+        zkpDecTest()
         encDecTest()
         serializeTest()
         rerandTest()
@@ -249,6 +250,24 @@ function zkpBinTest () {
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
   ppub.destroy()
+}
+
+function zkpDecTest () {
+  console.log('zkpDecTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m = 123
+  const c = pub.encG1(m)
+  const [dec, zkp] = sec.decWithZkpDec(c, pub)
+  assert.equal(dec, m)
+  assert(pub.verify(c, zkp, m))
+  assert(!pub.verify(c, zkp, m + 1))
+
+  const c1 = pub.encG1(m)
+  assert(!pub.verify(c1, zkp, m))
+  zkp.a_[0]++
+  assert(!pub.verify(c, zkp, m))
 }
 
 function mulIntTest () {

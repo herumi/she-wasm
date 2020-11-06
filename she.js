@@ -49,6 +49,7 @@
     const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
     const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
     const SHE_ZKPBIN_SIZE = MCLBN_FP_SIZE * 4
+    const SHE_ZKPDEC_SIZE = MCLBN_FP_SIZE * 2
 
     const _free = pos => {
       mod._mclBnFree(pos)
@@ -226,6 +227,8 @@
     mod.sheDecGT = wrap_dec(mod._sheDecGT)
     mod.sheZkpBinSerialize = _wrapSerialize(mod._sheZkpBinSerialize)
     mod.sheZkpBinDeserialize = _wrapDeserialize(mod._sheZkpBinDeserialize)
+    mod.sheZkpDecSerialize = _wrapSerialize(mod._sheZkpDecSerialize)
+    mod.sheZkpDecDeserialize = _wrapDeserialize(mod._sheZkpDecDeserialize)
 
     class Common {
       constructor (size) {
@@ -321,6 +324,26 @@
           throw ('exports.SecretKey.dec:not supported')
         }
         return callDec(dec, this, c)
+      }
+      decWithZkpDec (c, pub) {
+        if (!(c instanceof exports.CipherTextG1)) {
+          throw ('decWithZkpDec:not supported')
+        }
+        const zkp = new exports.ZkpDec()
+        const mPos = mod._malloc(8)
+        const zkpPos = zkp._alloc()
+        const secPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const pubPos = pub._allocAndCopy()
+        const r = mod._sheDecWithZkpDecG1(mPos, zkpPos, secPos, cPos, pubPos)
+        _free(pubPos)
+        _free(cPos)
+        _free(secPos)
+        zkp._saveAndFree(zkpPos)
+        const m = mod.HEAP32[mPos / 4]
+        _free(mPos)
+        if (r) throw ('_sheDecWithZkpDecG1')
+        return [m, zkp]
       }
       decViaGT (c) {
         let dec = null
@@ -439,7 +462,10 @@
       encWithZkpBinG2 (m) {
         return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
       }
-      verify (c, zkp) {
+      verify (c, zkp, m) {
+        if (m !== undefined) {
+          return this.verifyZkpDec(c, zkp, m)
+        }
         let func = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           func = mod._sheVerifyZkpBinG1
@@ -457,6 +483,19 @@
         _free(cPos)
         _free(pubPos)
         return r == 1
+      }
+      verifyZkpDec (c, zkp, m) {
+        if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          throw ('verifyZkpDec:bad type')
+        }
+        const pubPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = mod._sheVerifyZkpDecG1(pubPos, cPos, m, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        _free(pubPos)
+        return r === 1
       }
       reRand (c) {
         let func = null
@@ -560,6 +599,18 @@
       }
       deserialize (s) {
         this._setter(mod.sheZkpBinDeserialize, s)
+      }
+    }
+
+    exports.ZkpDec = class extends Common {
+      constructor () {
+        super(SHE_ZKPDEC_SIZE)
+      }
+      serialize () {
+        return this._getter(mod.sheZkpDecSerialize)
+      }
+      deserialize (s) {
+        this._setter(mod.sheZkpDecDeserialize, s)
       }
     }
 

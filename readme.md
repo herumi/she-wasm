@@ -5,6 +5,9 @@
 
 see [mcl](https://github.com/herumi/mcl)
 
+# News
+- 2020/Nov/06 `sec.decWithZkpDec(c, pub)` returns `[m, zkp]` that `zkp` proves `dec(c) = m`, and `pub.verify(c, zkp, m)` returns the correctness.
+
 # Demo
 
 * [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
