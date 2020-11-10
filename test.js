@@ -238,17 +238,38 @@ function zkpBinTestSub (sec, pub, encWithZkpBin) {
   }
 }
 
+function zkpBinTestEqSub(sec, pub, encWithZkpBin) {
+  console.log(`zkpBinTestEqSub ${encWithZkpBin}`)
+	for (let m = 0; m < 2; m++) {
+		const [c1, c2, zkp] = pub[encWithZkpBin](m)
+		assert.equal(sec.dec(c1),m)
+		assert.equal(sec.dec(c2), m)
+		assert(pub.verifyEq(c1, c2, zkp))
+		const [c3, c4] = pub[encWithZkpBin](m)
+		assert(!pub.verifyEq(c3, c4, zkp))
+  }
+	try {
+		pub[encWithZkpBin](2)
+		assert(false)
+	} catch (e) {
+    console.log(e)
+		assert(true)
+	}
+}
+
 function zkpBinTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   zkpBinTestSub(sec, pub, 'encWithZkpBinG1')
   zkpBinTestSub(sec, pub, 'encWithZkpBinG2')
+  zkpBinTestEqSub(sec, pub, 'encWithZkpBinEq')
 
   const ppub = new she.PrecomputedPublicKey()
   ppub.init(pub)
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
+  // ZKP bin eq not supported on pre computed
   ppub.destroy()
 }
 
