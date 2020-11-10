@@ -1,0 +1,14 @@
+coverage
+node_modules
+lib
+**/*.css
+**/*.html
+**/*.md
+node_modules
+.github
+**/*.wasm
+she_c.js
+she_c384.js
+demo
+.github
+jquery-3.4.1.min.js
