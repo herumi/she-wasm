@@ -376,7 +376,7 @@
         const r = isZero(secPos, cPos)
         _free(cPos)
         _free(secPos)
-        return r
+        return !!r
       }
     }
 

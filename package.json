@@ -4,7 +4,8 @@
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "she.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "jest --coverage",
+    "dev": "jest --watch"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   },
   "homepage": "https://github.com/herumi/she-wasm#readme",
   "devDependencies": {
+    "jest": "^26.6.3",
     "standard": "^10.0.3"
   }
 }
