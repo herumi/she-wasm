@@ -28,5 +28,12 @@
   "devDependencies": {
     "jest": "^26.6.3",
     "standard": "^10.0.3"
+  },
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "she_c.js",
+      "she_c384.js",
+      "tests"
+    ]
   }
 }
