@@ -49,6 +49,7 @@
     const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
     const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
     const SHE_ZKPBIN_SIZE = MCLBN_FP_SIZE * 4
+    const SHE_ZKPBINEQ_SIZE = MCLBN_FP_SIZE * 7
     const SHE_ZKPDEC_SIZE = MCLBN_FP_SIZE * 2
 
     const _free = pos => {
@@ -229,6 +230,8 @@
     mod.sheZkpBinDeserialize = _wrapDeserialize(mod._sheZkpBinDeserialize)
     mod.sheZkpDecSerialize = _wrapSerialize(mod._sheZkpDecSerialize)
     mod.sheZkpDecDeserialize = _wrapDeserialize(mod._sheZkpDecDeserialize)
+    mod.sheZkpBinEqSerialize = _wrapSerialize(mod._sheZkpBinEqSerialize)
+    mod.sheZkpBinEqDeserialize = _wrapDeserialize(mod._sheZkpBinEqDeserialize)
 
     class Common {
       constructor (size) {
@@ -372,7 +375,7 @@
         const r = isZero(secPos, cPos)
         _free(cPos)
         _free(secPos)
-        return r
+        return !!r
       }
     }
 
@@ -433,7 +436,7 @@
         const r = verify(this.p, cPos, zkpPos)
         _free(zkpPos)
         _free(cPos)
-        return r == 1
+        return r === 1
       }
     }
     exports.PublicKey = class extends Common {
@@ -461,6 +464,41 @@
       }
       encWithZkpBinG2 (m) {
         return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+      }
+
+      // return [EncG1(m), EncG2(m), Zkp]
+      encWithZkpBinEq (m) {
+        const pubPos = this._allocAndCopy()
+        const c1 = new exports.CipherTextG1()
+        const c1Pos = c1._alloc()
+        const c2 = new exports.CipherTextG2()
+        const c2Pos = c2._alloc()
+
+        const zkp = new exports.ZkpBinEq()
+        const zkpPos = zkp._alloc()
+        const r = mod._sheEncWithZkpBinEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+        zkp._saveAndFree(zkpPos)
+        c2._saveAndFree(c2Pos)
+        c1._saveAndFree(c1Pos)
+        _free(pubPos)
+        if (r) throw ('encWithZkpBinEq:bad m:' + m)
+        return [c1, c2, zkp]
+      }
+      // check dec(c1) == dec(c2) in {0, 1}
+      verifyZkpBinEq (c1, c2, zkp) {
+        if (!exports.CipherTextG1.prototype.isPrototypeOf(c1) || !exports.CipherTextG2.prototype.isPrototypeOf(c2)) {
+          throw ('exports.verify:bad type')
+        }
+        const pubPos = this._allocAndCopy()
+        const c1Pos = c1._allocAndCopy()
+        const c2Pos = c2._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = mod._sheVerifyZkpBinEq(pubPos, c1Pos, c2Pos, zkpPos)
+        _free(zkpPos)
+        _free(c2Pos)
+        _free(c1Pos)
+        _free(pubPos)
+        return r === 1
       }
       verify (c, zkp, m) {
         if (m !== undefined) {
@@ -599,6 +637,18 @@
       }
       deserialize (s) {
         this._setter(mod.sheZkpBinDeserialize, s)
+      }
+    }
+
+    exports.ZkpBinEq = class extends Common {
+      constructor() {
+        super(SHE_ZKPBINEQ_SIZE)
+      }
+      serialize() {
+        return this._getter(mod.sheZkpBinEqSerialize)
+      }
+      deserialize(s) {
+        this._setter(mod.sheZkpBinEqDeserialize, s)
       }
     }
 

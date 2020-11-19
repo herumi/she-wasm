@@ -1,6 +1,7 @@
 'use strict'
 const she = require('../she')
 const { performance } = require('perf_hooks')
+const { fail } = require('assert')
 
 const curveTest = (curveType, name) => {
 	describe(`curveType ${name}`, () => {
@@ -236,21 +237,23 @@ function zkpBinTestSub(sec, pub, encWithZkpBin) {
 	}
 }
 
-function zkpBinTestEqSub(sec, pub, encWithZkpBin) {
-	for (let m = 0; m < 2; m++) {
-		const [c1, c2, zkp] = pub[encWithZkpBin](m)
-		expect(sec.dec(c1)).toEqual(m)
-		expect(sec.dec(c2)).toEqual(m)
-		expect(pub.verifyEq(c1, c2, zkp)).toBeTruthy()
-		const [c3, c4] = pub[encWithZkpBin](m)
-		expect(pub.verifyEq(c3, c4, zkp)).toBeFalsy()
-	}
-	try {
-		pub[encWithZkpBin](2)
-		fail()
-	} catch (e) {
-		expect(e).toBeDefined()
-	}
+function zkpBinEqTestSub(sec, pub, encWithZkpBinEq) {
+    for (let m = 0; m < 2; m++) {
+        const [c1, c2, zkp] = pub[encWithZkpBinEq](m)
+        expect(sec.dec(c1)).toEqual(m)
+        expect(sec.dec(c2)).toEqual(m)
+        expect(pub.verifyZkpBinEq(c1, c2, zkp)).toBeTruthy()
+        const [c3, c4] = pub[encWithZkpBinEq](m)
+        expect(pub.verifyZkpBinEq(c3, c4, zkp)).toBeFalsy()
+        zkp.a_[0]++
+        expect(pub.verifyZkpBinEq(c1, c2, zkp)).toBeFalsy()
+      try {
+        pub[encWithZkpBinEq](2)
+        fail()
+      } catch (e) {
+        expect(e).toBeDefined()
+      }
+    }
 }
 
 function zkpBinTest() {
@@ -272,7 +275,7 @@ function zkpBinTest() {
 		const sec = new she.SecretKey()
 		sec.setByCSPRNG()
 		const pub = sec.getPublicKey()
-		zkpBinTestEqSub(sec, pub, 'encWithZkpBinEq')
+		zkpBinEqTestSub(sec, pub, 'encWithZkpBinEq')
 	})
 }
 
