@@ -6,7 +6,8 @@
 see [mcl](https://github.com/herumi/mcl)
 
 # News
-- 2020/Nov/06 `sec.decWithZkpDec(c, pub)` returns `[m, zkp]` that `zkp` proves `dec(c) = m`, and `pub.verify(c, zkp, m)` returns the correctness.
+- 2020/Dec/18 `sec.decWithZkpDec(c, aux)` returns `[m, zkp]` that `zkp` proves `dec(c) = m` for CipherTextGT c, and `aux.verify(c, zkp, m)` returns the correctness where `aux = pub.getAuxiliaryForZkpDecGT()`.
+- 2020/Nov/06 `sec.decWithZkpDec(c, pub)` returns `[m, zkp]` that `zkp` proves `dec(c) = m` for CipherTextG1 c, and `pub.verify(c, zkp, m)` returns the correctness.
 
 # Demo
 

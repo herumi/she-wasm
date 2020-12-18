@@ -1,6 +1,6 @@
 {
   "name": "she-wasm",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "she.js",
   "scripts": {
