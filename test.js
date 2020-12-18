@@ -18,6 +18,7 @@ const curveTest = (curveType, name) => {
         finalExpTest()
         loadTableTest()
         zkpBinTest()
+        zkpEqTest()
         mulIntTest()
         benchmark()
       } catch (e) {
@@ -272,6 +273,22 @@ function zkpBinTest () {
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
   // ZKP bin eq not supported on pre computed
   ppub.destroy()
+}
+
+function zkpEqTest () {
+  console.log('zkpEqTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  for (let m = -3; m < 5; m++) {
+    const [c1, c2, zkp] = pub.encWithZkpEq(m)
+    assert.equal(sec.dec(c1), m)
+    assert.equal(sec.dec(c2), m)
+    assert(pub.verifyZkpEq(c1, c2, zkp))
+    serializeSubTest(zkp, she.ZkpEq)
+    zkp.a_[0]++
+    assert(!pub.verify(c1, c2, zkp))
+  }
 }
 
 function zkpDecTest () {

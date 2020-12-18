@@ -40,17 +40,20 @@
     const MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE
     const MCLBN_COMPILED_TIME_VAR = (MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE)
     const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
+    const MCLBN_FR_SIZE = MCLBN_FR_UNIT_SIZE * 8
     const MCLBN_G1_SIZE = MCLBN_FP_SIZE * 3
     const MCLBN_G2_SIZE = MCLBN_FP_SIZE * 6
     const MCLBN_GT_SIZE = MCLBN_FP_SIZE * 12
-    const SHE_SECRETKEY_SIZE = MCLBN_FP_SIZE * 2
+    const SHE_SECRETKEY_SIZE = MCLBN_FR_SIZE * 2
     const SHE_PUBLICKEY_SIZE = MCLBN_G1_SIZE + MCLBN_G2_SIZE
     const SHE_CIPHERTEXT_G1_SIZE = MCLBN_G1_SIZE * 2
     const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
     const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
-    const SHE_ZKPBIN_SIZE = MCLBN_FP_SIZE * 4
-    const SHE_ZKPBINEQ_SIZE = MCLBN_FP_SIZE * 7
-    const SHE_ZKPDEC_SIZE = MCLBN_FP_SIZE * 2
+    const SHE_ZKPBIN_SIZE = MCLBN_FR_SIZE * 4
+    const SHE_ZKPEQ_SIZE = MCLBN_FR_SIZE * 4
+    const SHE_ZKPBINEQ_SIZE = MCLBN_FR_SIZE * 7
+    const SHE_ZKPDEC_SIZE = MCLBN_FR_SIZE * 2
+    const SHE_ZKPDECGT_SIZE = MCLBN_FR_SIZE * 4
 
     const _free = pos => {
       mod._mclBnFree(pos)
@@ -229,9 +232,13 @@
     mod.sheZkpBinSerialize = _wrapSerialize(mod._sheZkpBinSerialize)
     mod.sheZkpBinDeserialize = _wrapDeserialize(mod._sheZkpBinDeserialize)
     mod.sheZkpDecSerialize = _wrapSerialize(mod._sheZkpDecSerialize)
+    mod.sheZkpDecGTSerialize = _wrapSerialize(mod._sheZkpDecGTSerialize)
     mod.sheZkpDecDeserialize = _wrapDeserialize(mod._sheZkpDecDeserialize)
+    mod.sheZkpDecGTDeserialize = _wrapDeserialize(mod._sheZkpDecGTDeserialize)
     mod.sheZkpBinEqSerialize = _wrapSerialize(mod._sheZkpBinEqSerialize)
     mod.sheZkpBinEqDeserialize = _wrapDeserialize(mod._sheZkpBinEqDeserialize)
+    mod.sheZkpEqSerialize = _wrapSerialize(mod._sheZkpEqSerialize)
+    mod.sheZkpEqDeserialize = _wrapDeserialize(mod._sheZkpEqDeserialize)
 
     class Common {
       constructor (size) {
@@ -500,6 +507,40 @@
         _free(pubPos)
         return r === 1
       }
+      // return [EncG1(m), EncG2(m), Zkp]
+      encWithZkpEq (m) {
+        const pubPos = this._allocAndCopy()
+        const c1 = new exports.CipherTextG1()
+        const c1Pos = c1._alloc()
+        const c2 = new exports.CipherTextG2()
+        const c2Pos = c2._alloc()
+
+        const zkp = new exports.ZkpEq()
+        const zkpPos = zkp._alloc()
+        const r = mod._sheEncWithZkpEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+        zkp._saveAndFree(zkpPos)
+        c2._saveAndFree(c2Pos)
+        c1._saveAndFree(c1Pos)
+        _free(pubPos)
+        if (r) throw ('encWithZkpEq:bad m:' + m)
+        return [c1, c2, zkp]
+      }
+      // check dec(c1) == dec(c2)
+      verifyZkpEq (c1, c2, zkp) {
+        if (!exports.CipherTextG1.prototype.isPrototypeOf(c1) || !exports.CipherTextG2.prototype.isPrototypeOf(c2)) {
+          throw ('exports.verify:bad type')
+        }
+        const pubPos = this._allocAndCopy()
+        const c1Pos = c1._allocAndCopy()
+        const c2Pos = c2._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = mod._sheVerifyZkpEq(pubPos, c1Pos, c2Pos, zkpPos)
+        _free(zkpPos)
+        _free(c2Pos)
+        _free(c1Pos)
+        _free(pubPos)
+        return r === 1
+      }
       verify (c, zkp, m) {
         if (m !== undefined) {
           return this.verifyZkpDec(c, zkp, m)
@@ -637,6 +678,18 @@
       }
       deserialize (s) {
         this._setter(mod.sheZkpBinDeserialize, s)
+      }
+    }
+
+    exports.ZkpEq = class extends Common {
+      constructor () {
+        super(SHE_ZKPEQ_SIZE)
+      }
+      serialize () {
+        return this._getter(mod.sheZkpEqSerialize)
+      }
+      deserialize (s) {
+        this._setter(mod.sheZkpEqDeserialize, s)
       }
     }
 
