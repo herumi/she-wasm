@@ -54,6 +54,7 @@
     const SHE_ZKPBINEQ_SIZE = MCLBN_FR_SIZE * 7
     const SHE_ZKPDEC_SIZE = MCLBN_FR_SIZE * 2
     const SHE_ZKPDECGT_SIZE = MCLBN_FR_SIZE * 4
+    const SHE_AUX_SIZE = MCLBN_GT_SIZE * 4
 
     const _free = pos => {
       mod._mclBnFree(pos)
@@ -232,13 +233,13 @@
     mod.sheZkpBinSerialize = _wrapSerialize(mod._sheZkpBinSerialize)
     mod.sheZkpBinDeserialize = _wrapDeserialize(mod._sheZkpBinDeserialize)
     mod.sheZkpDecSerialize = _wrapSerialize(mod._sheZkpDecSerialize)
-    mod.sheZkpDecGTSerialize = _wrapSerialize(mod._sheZkpDecGTSerialize)
     mod.sheZkpDecDeserialize = _wrapDeserialize(mod._sheZkpDecDeserialize)
-    mod.sheZkpDecGTDeserialize = _wrapDeserialize(mod._sheZkpDecGTDeserialize)
     mod.sheZkpBinEqSerialize = _wrapSerialize(mod._sheZkpBinEqSerialize)
     mod.sheZkpBinEqDeserialize = _wrapDeserialize(mod._sheZkpBinEqDeserialize)
     mod.sheZkpEqSerialize = _wrapSerialize(mod._sheZkpEqSerialize)
     mod.sheZkpEqDeserialize = _wrapDeserialize(mod._sheZkpEqDeserialize)
+    mod.sheZkpDecGTSerialize = _wrapSerialize(mod._sheZkpDecGTSerialize)
+    mod.sheZkpDecGTDeserialize = _wrapDeserialize(mod._sheZkpDecGTDeserialize)
 
     class Common {
       constructor (size) {
@@ -353,6 +354,26 @@
         const m = mod.HEAP32[mPos / 4]
         _free(mPos)
         if (r) throw ('_sheDecWithZkpDecG1')
+        return [m, zkp]
+      }
+      decWithZkpDecGT (c, aux) {
+        if (!(c instanceof exports.CipherTextGT)) {
+          throw ('decWithZkpDecGT:bad c')
+        }
+        const zkp = new exports.ZkpDecGT()
+        const mPos = mod._malloc(8)
+        const zkpPos = zkp._alloc()
+        const secPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const auxPos = aux._allocAndCopy()
+        const r = mod._sheDecWithZkpDecGT(mPos, zkpPos, secPos, cPos, auxPos)
+        _free(auxPos)
+        _free(cPos)
+        _free(secPos)
+        zkp._saveAndFree(zkpPos)
+        const m = mod.HEAP32[mPos / 4]
+        _free(mPos)
+        if (r) throw ('_sheDecWithZkpDecGT')
         return [m, zkp]
       }
       decViaGT (c) {
@@ -615,6 +636,15 @@
         if (r) throw ('callConvert err')
         return ct
       }
+      getAuxiliaryForZkpDecGT () {
+        const aux = new exports.AuxiliaryForZkpDecGT()
+        const pubPos = this._allocAndCopy()
+        const auxPos = aux._alloc()
+        mod._sheGetAuxiliaryForZkpDecGT(auxPos, pubPos)
+        aux._saveAndFree(auxPos)
+        _free(pubPos)
+        return aux
+      }
     }
 
     exports.deserializeHexStrToPublicKey = s => {
@@ -714,6 +744,37 @@
       }
       deserialize (s) {
         this._setter(mod.sheZkpDecDeserialize, s)
+      }
+    }
+
+    exports.ZkpDecGT = class extends Common {
+      constructor () {
+        super(SHE_ZKPDECGT_SIZE)
+      }
+      serialize () {
+        return this._getter(mod.sheZkpDecGTSerialize)
+      }
+      deserialize (s) {
+        this._setter(mod.sheZkpDecGTDeserialize, s)
+      }
+    }
+
+    exports.AuxiliaryForZkpDecGT = class extends Common {
+      constructor () {
+        super(SHE_AUX_SIZE)
+      }
+      verify (c, zkp, m) {
+        if (!exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+          throw ('verify:bad c')
+        }
+        const auxPos = this._allocAndCopy()
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const r = mod._sheVerifyZkpDecGT(auxPos, cPos, m, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        _free(auxPos)
+        return r === 1
       }
     }
 
