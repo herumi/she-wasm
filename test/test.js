@@ -1,5 +1,5 @@
 'use strict'
-const she = require('./she.js')
+const she = require('../src/index.js')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
