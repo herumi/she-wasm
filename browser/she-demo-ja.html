@@ -5,7 +5,6 @@
 	<title>Two-level Homomorphic Encryption demo</title>
 	<link rel="stylesheet" href="mobile.css">
 	<script src="jquery-3.4.1.min.js"></script>
-	<script src="she_c.js"></script>
 	<script src="she.js"></script>
 	<script src="she-demo-ja.js"></script>
 </head>
@@ -16,7 +15,7 @@
 <form name="selectCurve">
 pairing parameter : <select name="curveType" onChange="onChangeSelectCurve()">
 <option value="0" selected>BN254</option>
-<option value="1">BN381_1</option>
+<option value="4">BN_SNARK1</option>
 <option value="5">BLS12_381</option>
 </select>
 ライブラリ：<span name="status">初期化中</span>

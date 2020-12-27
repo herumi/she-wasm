@@ -6,14 +6,14 @@
 see [mcl](https://github.com/herumi/mcl)
 
 # News
+- 2020/Dec/27 change file layout
 - 2020/Dec/18 `sec.decWithZkpDec(c, aux)` returns `[m, zkp]` that `zkp` proves `dec(c) = m` for CipherTextGT c, and `aux.verify(c, zkp, m)` returns the correctness where `aux = pub.getAuxiliaryForZkpDecGT()`.
 - 2020/Nov/06 `sec.decWithZkpDec(c, pub)` returns `[m, zkp]` that `zkp` proves `dec(c) = m` for CipherTextG1 c, and `pub.verify(c, zkp, m)` returns the correctness.
 
 # Demo
 
-* [she demo on browser](https://herumi.github.io/she-wasm/she-demo.html)
-* [cross tabulation demo](https://herumi.github.io/she-wasm/cross-demo.html)
-* [cross tabulation demo (Japanese)](https://herumi.github.io/she-wasm/cross-demo-ja.html)
+* [cross tabulation demo](https://herumi.github.io/she-wasm/browser/cross-demo.html)
+* [cross tabulation demo (Japanese)](https://herumi.github.io/she-wasm/browser/cross-demo-ja.html)
 
 # for Node.js
 

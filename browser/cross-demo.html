@@ -3,41 +3,40 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>クロス集計デモ</title>
+  <title>Cross Tabulation demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="cross-demo.css">
   <script src="she.js"></script>
-  <script src="she_c.js"></script>
   <script src="jquery-3.4.1.min.js"></script>
   <script src="cross-demo.js"></script>
 </head>
 
 <body>
   <div class="designportal-advanced">
-    <h1 class="cross-h1">暗号化したまま計算できる暗号技術</h1>
-    <h2 class="cross-h2">クロス集計デモ</h2>
+    <h1 class="cross-h1">level 2 homomorphic encryption</h1>
+    <h2 class="cross-h2">Cross Tabulation demo</h2>
     <p class="cross-status">status : <span class="cross-status-span" name="status">initializing...</span></p>
-    <button class="cross-button" type="button" onclick="clearTable()">テーブルクリア</button>
+    <button class="cross-button" type="button" onclick="clearTable()">clear table</button>
     <div class="advanced-container">
 
       <div id="tabs" class="advanced-tab-container">
-        <button role="tab" class="advanced-tab advanced-tab--active" type="button" aria-expanded="true">データ提供者</button>
-        <button role="tab" class="advanced-tab" type="button" aria-expanded="false">代理秘匿計算サーバ</button>
-        <button role="tab" class="advanced-tab" type="button" aria-expanded="false">復号クライアント</button>
+        <button role="tab" class="advanced-tab advanced-tab--active" type="button" aria-expanded="true">data supllier</button>
+        <button role="tab" class="advanced-tab" type="button" aria-expanded="false">computing server</button>
+        <button role="tab" class="advanced-tab" type="button" aria-expanded="false">decryption client</button>
       </div>
 
       <div class="advanced-panel-container">
         <div class="advanced-panel-contents advanced-panel-contents--active">
           <div class="cross-panel-wrap">
             <div class="cross-header">
-              <h3>データをセット</h3>
-              <button class="cross-button" type="button" onclick="appendRand()">プリセットを追加</button>
+              <h3>set data</h3>
+              <button class="cross-button" type="button" onclick="appendRand()">append ramdomly</button>
               <div class="cross-add-xy-box">
-                <button class="cross-button" type="button" onclick="append()">"x"と"y"を追加</button>
+                <button class="cross-button" type="button" onclick="append()">append "x,y"</button>
                 <input class="cross-add-xy" type="text" name="append" value="1,1">
               </div>
             </div>
-            <h4>公開鍵</h4>
+            <h4>public key</h4>
             <span name="pub" class="hex cross-key"></span>
               <table summary="client_table">
                 <thead>
@@ -58,8 +57,8 @@
           <div class="cross-panel-double-wrap">
             <div class="cross-panel-wrap">
               <div class="cross-header">
-                <h3>暗号文をサーバー側で受信</h3>
-                <button class="cross-button" type="button" onclick="send()">実行</button>
+                <h3>receive ciphertexts</h3>
+                <button class="cross-button" type="button" onclick="send()">exec</button>
               </div>
               <table summary="server_table">
                 <thead>
@@ -75,10 +74,10 @@
             </div>
             <div class="cross-panel-wrap">
               <div class="cross-header">
-                <h3>暗号文のまま集計</h3>
-                <button class="cross-button" type="button" onclick="mulSum()">実行</button>
+                <h3>aggregate</h3>
+                <button class="cross-button" type="button" onclick="mulSum()">exec</button>
               </div>
-              <h4>集計結果</h4>
+              <h4>results</h4>
               <div>
                 <span>ΣEnc(xi) : </span><span name="encXsumS"></span>
               </div>
@@ -97,14 +96,13 @@
           <div class="cross-panel-double-wrap">
             <div class="cross-panel-wrap">
               <div class="cross-header">
-                <h3>クライアント側で受信</h3>
-                <button class="cross-button" type="button" onclick="recv()">実行</button>
+                <h3>receive aggregation</h3>
+                <button class="cross-button" type="button" onclick="recv()">exec</button>
               </div>
-              <h4>秘密鍵</h4>
+              <h4>secret key</h4>
               <span name="sec" class="hex cross-key"></span>
 
-              <h4>暗号文の計算結果</h4>
-
+              <h4>results</h4>
               <div>
                 <span>ΣEnc(xi) :</span><span name="encXsumC"></span>
               </div>
@@ -117,10 +115,10 @@
             </div>
             <div class="cross-panel-wrap">
               <div class="cross-header">
-                <h3>復号する</h3>
-                <button class="cross-button" type="button" onclick="dec()">実行</button>
+                   <h3>decrypt</h3>
+                <button class="cross-button" type="button" onclick="dec()">exec</button>
               </div>
-              <h4>集計結果<h4>
+              <h4>cross tabulation<h4>
                   <table summary="cross_table">
                     <thead>
                       <tr id="server_header">

@@ -3,23 +3,6 @@ function setValue (name, val) { document.getElementsByName(name)[0].value = val 
 function getText (name) { return document.getElementsByName(name)[0].innerText }
 function setText (name, val) { document.getElementsByName(name)[0].innerText = val }
 
-function loadScript (url, callback) {
-  const script = document.createElement('script')
-  script.type = 'text/javascript'
-  script.src = url
-  if (script.readyState) {
-    script.onreadystatechange = () => {
-      if (script.readyState === 'loaded' || script.readyState === 'complete') {
-        script.onreadystatechange = null
-        callback()
-      }
-    }
-  } else {
-    script.onload = () => callback()
-  }
-  document.getElementsByTagName('head')[0].appendChild(script)
-}
-
 let sec = null
 let pub = null
 
@@ -39,8 +22,8 @@ function initShe (curveType) {
     console.log(`curveType=${curveType}`)
     setText('status', `curveType=${curveType} status ok`)
   }
-  setText('status', `curveType=${curveType} status initializing...`)
   she.init(curveType).then(() => {
+    setText('status', `curveType=${curveType} status initializing...`)
     if (curveType === she.BN254) {
       fetch('https://herumi.github.io/she-dlp-table/she-dlp-0-20-gt.bin')
         .then(res => res.arrayBuffer())
@@ -57,9 +40,7 @@ function initShe (curveType) {
 }
 
 let prevSelectedCurve = 0
-loadScript('./she_c.js', () => {
-  initShe(prevSelectedCurve)
-})
+initShe(0)
 
 function onChangeSelectCurve () {
   const obj = document.selectCurve.curveType
@@ -67,11 +48,7 @@ function onChangeSelectCurve () {
   const curveType = obj.options[idx].value | 0
   if (curveType === prevSelectedCurve) return
   prevSelectedCurve = curveType
-  const srcName = curveType === 0 ? './she_c.js' : './she_c384.js'
-  console.log(`srcName=${srcName}`)
-  loadScript(srcName, () => {
-    initShe(curveType)
-  })
+  initShe(curveType)
 }
 
 function bench (label, count, func) {
