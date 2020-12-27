@@ -17,27 +17,13 @@
   exports.BN462 = 3
   exports.BN_SNARK1 = 4
   exports.BLS12_381 = 5
-  /* eslint-disable */
-  const getUnitSize = curveType => {
-    switch (curveType) {
-    case exports.BN254:
-    case exports.BN_SNARK1:
-      return 4; /* use she_c.js */
-    case exports.BN381_1:
-    case exports.BN381_2:
-    case exports.BLS12_381:
-      return 6; /* use she_c384.js */
-    default:
-      throw new Error(`QQQ bad curveType=${curveType}`)
-    }
-  }
 
   const defaultTryNum = 2048
 
   const setup = (exports, curveType, range, tryNum) => {
     const mod = exports.mod
-    const MCLBN_FP_UNIT_SIZE = getUnitSize(curveType)
-    const MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE
+    const MCLBN_FP_UNIT_SIZE = 6
+    const MCLBN_FR_UNIT_SIZE = 4
     const MCLBN_COMPILED_TIME_VAR = (MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE)
     const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
     const MCLBN_FR_SIZE = MCLBN_FR_UNIT_SIZE * 8
@@ -924,7 +910,7 @@
       curveType = exports.BN254
     }
     exports.curveType = curveType
-    const name = getUnitSize(curveType) == 4 ? 'she_c' : 'she_c384'
+    const name = 'she_c'
     return new Promise(resolve => {
       if (isNodeJs) {
         const path = require('path')
