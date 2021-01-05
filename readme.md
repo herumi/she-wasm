@@ -28,7 +28,6 @@ The version `v0.7.0` breaks backward compatibility of the entry point.
 - Node.js : `const she = require('she-wasm')`
 - React : `const she = require('she-wasm/browser')`
 - HTML : `<script src="https://herumi.github.io/she-wasm/browser/she.js"></script>`
-```
 
 # Doc
 * [_Efficient Two-level Homomorphic Encryption in Prime-order Bilinear Groups and A Fast Implementation in WebAssembly_](https://dl.acm.org/citation.cfm?doid=3196494.3196552), N. Attrapadung, G. Hanaoka, S. Mitsunari, Y. Sakai,
