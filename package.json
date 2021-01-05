@@ -1,6 +1,6 @@
 {
   "name": "she-wasm",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "src/index.js",
   "scripts": {
@@ -31,7 +31,7 @@
     "browser/readme.md",
     "browser/src/index-browser.js",
     "browser/webpack.config.js",
-    "test/test.js",
+    "test/test.js"
   ],
   "author": "herumi <herumi@nifty.com> (https://github.com/herumi/)",
   "license": "BSD-3-Clause",
