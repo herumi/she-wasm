@@ -103,7 +103,7 @@ const setupFactory = (createModule, getRandomValues) => {
         mod.HEAP8.set(buf, pos)
         const r = func(x, pos, buf.length)
         _free(pos)
-        if (r === 0) throw new Error('err _wrapDeserialize', buf)
+        if (r === 0 || r !== buf.length) throw new Error('err _wrapDeserialize', buf)
       }
     }
     exports.free = x => {
