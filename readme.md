@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/herumi/she-wasm.png)](https://travis-ci.org/herumi/she-wasm)
+[![Build Status](https://api.travis-ci.com/herumi/she-wasm.svg?branch=master)](https://travis-ci.com/github/herumi/she-wasm)
 # Two-level homomorphic encryption for Node.js by WebAssembly
 
 # Abstract
