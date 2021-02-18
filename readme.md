@@ -3,6 +3,13 @@
 
 # Abstract
 
+This library supports two kinds of lifted ElGamal encryption,
+- which can add two ciphertexts many times, and
+- can multiply two ciphertexts once.
+
+For two vectors x = (x1, ..., xn) and y = (y1, ..., yn),
+EncG1(x1) * EncG2(y1) + ... + EncG1(xn) * EncG2(yn) = EncGT(x1 * y1 + ... + xn * yn).
+
 see [mcl](https://github.com/herumi/mcl)
 
 # News
