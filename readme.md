@@ -46,15 +46,12 @@ K. Shimizu, and T. Teruya. ASIACCS 2018
 * [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # How to build
-Install [emsdk](https://github.com/juj/emsdk.git)
+Install [Emscripten](https://emscripten.org/).
 
 ```
-mkdir work
-cd work
-git clone git@github.com:herumi/mcl
-git clone git@github.com:herumi/she-wasm
-cd mcl
-make she-wasm
+git submodule update --init --resurcive
+cd src
+make
 ```
 
 # License
