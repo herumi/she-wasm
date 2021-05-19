@@ -915,8 +915,17 @@
       if (isNodeJs) {
         const path = require('path')
         const js = require(`./${name}.js`)
+        const crypto = require('crypto')
+        const _cryptoGetRandomValues = (p, n) => {
+          const a = new Uint8Array(n)
+          crypto.getRandomValues(a)
+          for (let i = 0; i < n; i++) {
+            exports.mod.HEAP8[p + i] = a[i]
+          }
+        }
         const Module = {
-          locateFile: baseName => { return path.join(__dirname, baseName) }
+          locateFile: baseName => { return path.join(__dirname, baseName) },
+          cryptoGetRandomValues: _cryptoGetRandomValues
         }
         js(Module)
           .then(_mod => {
