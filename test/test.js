@@ -8,7 +8,8 @@ const curveTest = (curveType, name) => {
     .then(() => {
       try {
         console.log(`name=${name}`)
-        minimumTest()
+        controlledRandomValues()
+         minimumTest()
         zkpDecTest()
         zkpDecGTTest()
         encDecTest()
@@ -23,7 +24,8 @@ const curveTest = (curveType, name) => {
         mulIntTest()
         benchmark()
       } catch (e) {
-        console.log(`TEST FAIL ${e}`)
+        console.error('TEST FAIL')
+        console.error(e)
         assert(false)
       }
     })
@@ -56,6 +58,31 @@ function minimumTest () {
   const c2 = she.add(c21, c22)
   const ct = she.mul(c1, c2)
   assert.equal(sec.dec(ct), (m1 + m2) * (m3 + m4))
+}
+
+function controlledRandomValues () {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const rnd = she.getCompliantRandomValues()
+  const methods = ['encG1','encG2', 'encGT','encWithZkpEq','encWithZkpBinEq','encWithZkpBinG2','encWithZkpBinG1']
+  methods.forEach(method => {
+    const r  = pub[method](1,rnd)
+    const r2  = pub[method](1,rnd)
+    const r3  = pub[method](1,she.deserializeRandomValues(she.serializeRandomValues(rnd)))
+    const r4  = pub[method](1)
+    if(method.indexOf('Zkp') === -1){
+      assert.equal(r.serializeToHexStr(), r2.serializeToHexStr())
+      assert.equal(r.serializeToHexStr(), r3.serializeToHexStr())
+      assert.notEqual(r.serializeToHexStr(), r4.serializeToHexStr())
+    }  else {
+      r.forEach((v,i) => {
+        assert.equal(r[i].serializeToHexStr(), r2[i].serializeToHexStr())
+        assert.equal(r[i].serializeToHexStr(), r3[i].serializeToHexStr())
+        assert.notEqual(r[i].serializeToHexStr(), r4[i].serializeToHexStr())
+      })
+    }
+  })
 }
 
 function encDecTest () {

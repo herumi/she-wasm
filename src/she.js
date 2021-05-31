@@ -17,6 +17,36 @@ const setupFactory = (createModule, getRandomValues) => {
 
   const defaultTryNum = 2048
 
+
+  
+  
+  exports.getCompliantRandomValues = function(n = 32){
+    const a = new Uint8Array(n)
+    exports.getRandomValues(a)
+    return a
+  }
+
+  exports.serializeRandomValues = function(rnd){
+    return rnd.toString()
+  }
+
+  exports.deserializeRandomValues = function(stringRnd){
+    return new Uint8Array(stringRnd.toString().split(','))
+  }
+
+  const _originalGetInternalRandomValues = function (n) {
+    return exports.getCompliantRandomValues(n)
+  }
+  
+  let _getInternalRandomValues = _originalGetInternalRandomValues
+
+  const _cryptoGetRandomValues = function(p, n) {
+    const a = _getInternalRandomValues(n)
+    for (let i = 0; i < n; i++) {
+      exports.mod.HEAP8[p + i] = a[i]
+    }
+  }
+
   const setup = (exports, curveType, range, tryNum) => {
     const mod = exports.mod
     const MCLBN_FP_UNIT_SIZE = 6
@@ -460,25 +490,41 @@ const setupFactory = (createModule, getRandomValues) => {
       deserialize (s) {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
-      encG1 (m) {
-        return callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
+      encG1 (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
+        const r =  callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
+        return r
       }
-      encG2 (m) {
-        return callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
+      encG2 (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
+        const r = callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
+        return r
       }
-      encGT (m) {
-        return callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
+      encGT (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
+        const r = callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
+        return r
       }
       // return [Enc(m), Zkp]
-      encWithZkpBinG1 (m) {
-        return callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m)
+      encWithZkpBinG1 (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
+        const r = callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
+        return r
       }
-      encWithZkpBinG2 (m) {
-        return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+      encWithZkpBinG2 (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
+        const r =  callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
+        return r 
       }
 
       // return [EncG1(m), EncG2(m), Zkp]
-      encWithZkpBinEq (m) {
+      encWithZkpBinEq (m, rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
         const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
         const c1Pos = c1._alloc()
@@ -488,6 +534,7 @@ const setupFactory = (createModule, getRandomValues) => {
         const zkp = new exports.ZkpBinEq()
         const zkpPos = zkp._alloc()
         const r = mod._sheEncWithZkpBinEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
         zkp._saveAndFree(zkpPos)
         c2._saveAndFree(c2Pos)
         c1._saveAndFree(c1Pos)
@@ -512,7 +559,8 @@ const setupFactory = (createModule, getRandomValues) => {
         return r === 1
       }
       // return [EncG1(m), EncG2(m), Zkp]
-      encWithZkpEq (m) {
+      encWithZkpEq (m,rndVal) {
+        if(rndVal) _getInternalRandomValues = function (){ return rndVal }
         const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
         const c1Pos = c1._alloc()
@@ -522,6 +570,7 @@ const setupFactory = (createModule, getRandomValues) => {
         const zkp = new exports.ZkpEq()
         const zkpPos = zkp._alloc()
         const r = mod._sheEncWithZkpEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+        if(rndVal) _getInternalRandomValues = _originalGetInternalRandomValues
         zkp._saveAndFree(zkpPos)
         c2._saveAndFree(c2Pos)
         c1._saveAndFree(c1Pos)
@@ -890,13 +939,7 @@ const setupFactory = (createModule, getRandomValues) => {
     if (r2) throw ('_sheSetRangeForDLP err')
     mod._sheSetTryNum(tryNum)
   } // setup()
-  const _cryptoGetRandomValues = function(p, n) {
-    const a = new Uint8Array(n)
-    exports.getRandomValues(a)
-    for (let i = 0; i < n; i++) {
-      exports.mod.HEAP8[p + i] = a[i]
-    }
-  }
+
   /*
     init she
     @param curveType
