@@ -224,6 +224,53 @@ const setupFactory = (createModule, getRandomValues) => {
     mod.sheZkpDecGTSerialize = _wrapSerialize(mod._sheZkpDecGTSerialize)
     mod.sheZkpDecGTDeserialize = _wrapDeserialize(mod._sheZkpDecGTDeserialize)
 
+    /*
+      record random values used in enc methods and replay it
+    */
+    exports.RandHistory = class {
+      constructor () {
+        this.a = []
+      }
+      set () {
+        if (this.a.length === 0) {
+          // record mode
+          this.orgRandFunc_ = exports.getRandFunc()
+          exports.setRandFunc(this._randFuncRecord)
+        } else {
+          // replay mode
+          this.orgRandFunc_ = exports.getRandFunc()
+          exports.setRandFunc(this._randFuncReplay)
+          this.pos_ = 0
+        }
+      }
+      reset () {
+        exports.setRandFunc(this.orgRandFunc_)
+      }
+      getStr () {
+        // Uint8Array is not array
+        return JSON.stringify(this.a.map(e=>Array.from(e)))
+      }
+      setStr (s) {
+        this.a = JSON.parse(s)
+      }
+      _randFuncRecord = (a) => {
+        this.orgRandFunc_(a)
+        this.a.push(a)
+      }
+      _randFuncReplay = (a) => {
+        const cur = this.a[this.pos_]
+        if (a.length !== cur.length) {
+          throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+        }
+        a.set(cur)
+        this.pos_++
+      }
+    }
+    exports.strToRandHistory = (s) => {
+      const rh = new exports.RandHistory()
+      rh.setStr(s)
+      return rh
+    }
     class Common {
       constructor (size) {
         this.a_ = new Uint32Array(size / 4)
@@ -416,21 +463,36 @@ const setupFactory = (createModule, getRandomValues) => {
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
         _free(pubPos)
       }
-      encG1 (m) {
-        return callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
+      encG1 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
+        if (rh) rh.reset()
+        return r
       }
-      encG2 (m) {
-        return callPPKEnc(mod._shePrecomputedPublicKeyEncG2, exports.CipherTextG2, this.p, m)
+      encG2 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG2, exports.CipherTextG2, this.p, m)
+        if (rh) rh.reset()
+        return r
       }
-      encGT (m) {
-        return callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m)
+      encGT (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m)
+        if (rh) rh.reset()
+        return r
       }
       // return [Enc(m), Zkp]
-      encWithZkpBinG1 (m) {
-        return callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG1, exports.CipherTextG1, this.p, m)
+      encWithZkpBinG1 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG1, exports.CipherTextG1, this.p, m)
+        if (rh) rh.reset()
+        return r
       }
-      encWithZkpBinG2 (m) {
-        return callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m)
+      encWithZkpBinG2 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m)
+        if (rh) rh.reset()
+        return r
       }
       verify (c, zkp) {
         let verify = null
@@ -460,25 +522,41 @@ const setupFactory = (createModule, getRandomValues) => {
       deserialize (s) {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
-      encG1 (m) {
-        return callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
+      encG1 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
+        if (rh) rh.reset()
+        return r
       }
-      encG2 (m) {
-        return callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
+      encG2 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
+        if (rh) rh.reset()
+        return r
       }
-      encGT (m) {
-        return callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
+      encGT (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
+        if (rh) rh.reset()
+        return r
       }
       // return [Enc(m), Zkp]
-      encWithZkpBinG1 (m) {
-        return callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m)
+      encWithZkpBinG1 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m)
+        if (rh) rh.reset()
+        return r
       }
-      encWithZkpBinG2 (m) {
-        return callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+      encWithZkpBinG2 (m, rh = undefined) {
+        if (rh) rh.set()
+        const r = callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+        if (rh) rh.reset()
+        return r
       }
 
       // return [EncG1(m), EncG2(m), Zkp]
-      encWithZkpBinEq (m) {
+      encWithZkpBinEq (m, rh = undefined) {
+        if (rh) rh.set()
         const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
         const c1Pos = c1._alloc()
@@ -492,6 +570,7 @@ const setupFactory = (createModule, getRandomValues) => {
         c2._saveAndFree(c2Pos)
         c1._saveAndFree(c1Pos)
         _free(pubPos)
+        if (rh) rh.reset()
         if (r) throw ('encWithZkpBinEq:bad m:' + m)
         return [c1, c2, zkp]
       }
@@ -512,7 +591,8 @@ const setupFactory = (createModule, getRandomValues) => {
         return r === 1
       }
       // return [EncG1(m), EncG2(m), Zkp]
-      encWithZkpEq (m) {
+      encWithZkpEq (m, rh = undefined) {
+        if (rh) rh.set()
         const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
         const c1Pos = c1._alloc()
@@ -526,6 +606,7 @@ const setupFactory = (createModule, getRandomValues) => {
         c2._saveAndFree(c2Pos)
         c1._saveAndFree(c1Pos)
         _free(pubPos)
+        if (rh) rh.reset()
         if (r) throw ('encWithZkpEq:bad m:' + m)
         return [c1, c2, zkp]
       }
@@ -896,6 +977,12 @@ const setupFactory = (createModule, getRandomValues) => {
     for (let i = 0; i < n; i++) {
       exports.mod.HEAP8[p + i] = a[i]
     }
+  }
+  exports.getRandFunc = () => {
+    return exports.getRandomValues
+  }
+  exports.setRandFunc = (f) => {
+    exports.getRandomValues = f
   }
   /*
     init she
