@@ -245,28 +245,26 @@ const setupFactory = (createModule, getRandomValues) => {
         if (this.a.length === 0) {
           // record mode
           this.orgRandFunc_ = exports.getRandFunc()
-          exports.setRandFunc(this._randFuncRecord)
+          exports.setRandFunc((a) => {
+            this.orgRandFunc_(a)
+            this.a.push(a)
+          })
         } else {
           // replay mode
           this.orgRandFunc_ = exports.getRandFunc()
-          exports.setRandFunc(this._randFuncReplay)
           this.pos_ = 0
+          exports.setRandFunc((a) => {
+            const cur = this.a[this.pos_]
+            if (a.length !== cur.length) {
+              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+            }
+             a.set(cur)
+             this.pos_++
+          })
         }
       }
       _reset () {
         exports.setRandFunc(this.orgRandFunc_)
-      }
-      _randFuncRecord = (a) => {
-        this.orgRandFunc_(a)
-        this.a.push(a)
-      }
-      _randFuncReplay = (a) => {
-        const cur = this.a[this.pos_]
-        if (a.length !== cur.length) {
-          throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
-        }
-        a.set(cur)
-        this.pos_++
       }
     }
     exports.strToRandHistory = (s) => {
