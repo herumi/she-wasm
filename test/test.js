@@ -64,19 +64,19 @@ function controlledRandomValues () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
-  const rh = new she.RandHistory()
-  const rh2 = new she.RandHistory()
-  const methods = ['encG1']//, 'encG2', 'encGT', 'encWithZkpEq', 'encWithZkpBinEq', 'encWithZkpBinG2', 'encWithZkpBinG1']
+  const methods = ['encG1', 'encG2', 'encGT', 'encWithZkpEq', 'encWithZkpBinEq', 'encWithZkpBinG2', 'encWithZkpBinG1']
   methods.forEach(method => {
+    const rh = new she.RandHistory() // empty
     const r0 = pub[method](1)
-    const r = pub[method](1, rh)
-    const r2 = pub[method](1, rh)
+    const r = pub[method](1, rh) // record
+    const r2 = pub[method](1, rh) // replay
     const r3 = pub[method](1, she.strToRandHistory(rh.getStr()))
     const r4 = pub[method](1)
     if (method.indexOf('Zkp') === -1) {
       assert.equal(r.serializeToHexStr(), r2.serializeToHexStr())
       assert.equal(r.serializeToHexStr(), r3.serializeToHexStr())
       assert.notEqual(r.serializeToHexStr(), r4.serializeToHexStr())
+      assert.notEqual(r0.serializeToHexStr(), r4.serializeToHexStr())
     } else {
       r.forEach((v, i) => {
         assert.equal(r[i].serializeToHexStr(), r2[i].serializeToHexStr())
