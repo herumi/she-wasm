@@ -523,6 +523,32 @@ const setupFactory = (createModule, getRandomValues) => {
       deserialize (s) {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
+
+      benalohBin = ( c, randHistory) => {
+        let method
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          method = 'encG1'
+        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          method = 'encG2'
+        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+          method = 'encGT'
+        } else {
+          throw ('exports.PublicKey.benalohBin:not supported')
+        }
+
+        const c0 = this[method](0, randHistory)
+
+        const serializedC = c.serializeToHexStr()
+        if(c0.serializeToHexStr() === serializedC ) return 0
+
+        const c1 = this[method](1, randHistory)
+
+        if(c1.serializeToHexStr() === serializedC) return 1
+
+        throw ('exports.PublicKey.benalohBin:c not matched')
+
+      }
+
       encG1 (m, rh = undefined) {
         if (rh) rh._set()
         const r = callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
