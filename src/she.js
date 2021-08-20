@@ -523,6 +523,29 @@ const setupFactory = (createModule, getRandomValues) => {
       deserialize (s) {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
+
+      // return m (0 or 1) if c is generated ciphertext of m by randHistory
+      // otherwise throw exception
+      verifyCipherBin (c, randHistory) {
+        let method
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          method = 'encG1'
+        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          method = 'encG2'
+        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+          method = 'encGT'
+        } else {
+          throw ('PublicKey.verifyCipherBin:not supported')
+        }
+        const serializedC = c.serializeToHexStr()
+
+        for (let m = 0; m < 2; m++) {
+          const c = this[method](m, randHistory)
+          if (c.serializeToHexStr() === serializedC) return m
+        }
+        throw ('PublicKey.verifyCipherBin:c not matched')
+      }
+
       encG1 (m, rh = undefined) {
         if (rh) rh._set()
         const r = callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)

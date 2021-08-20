@@ -8,6 +8,7 @@ const curveTest = (curveType, name) => {
     .then(() => {
       try {
         console.log(`name=${name}`)
+        verifyCipherBintText()
         controlledRandomValues()
         minimumTest()
         zkpDecTest()
@@ -82,6 +83,46 @@ function controlledRandomValues () {
         assert.equal(r[i].serializeToHexStr(), r2[i].serializeToHexStr())
         assert.equal(r[i].serializeToHexStr(), r3[i].serializeToHexStr())
         assert.notEqual(r[i].serializeToHexStr(), r4[i].serializeToHexStr())
+      })
+    }
+  })
+}
+
+function verifyCipherBintText () {
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  /*
+    check that r is not generated from rh
+  */
+  const checkCipher = (r, rh) => {
+    const errMsg = 'PublicKey.verifyCipherBin:c not matched'
+    try {
+      pub.verifyCipherBin(r, rh)
+      throw 'error'
+    } catch (e) {
+      assert.equal(e, errMsg)
+    }
+  }
+  const methods = ['encG1', 'encG2', 'encGT', 'encWithZkpBinG2', 'encWithZkpBinG1']
+  methods.forEach(method => {
+    const rh0 = new she.RandHistory() // empty
+    const r0 = pub[method](0, rh0)
+    const rh1 = new she.RandHistory() // empty
+    const r1 = pub[method](1, rh1)
+    if (method.indexOf('Zkp') === -1) {
+      assert.equal(pub.verifyCipherBin(r0, rh0), 0)
+      assert.equal(pub.verifyCipherBin(r1, rh1), 1)
+      checkCipher(r0, rh1)
+      checkCipher(r1, rh0)
+    } else {
+      r0.forEach((v, i) => {
+        // Do not test zkp
+        if ((r0.length === 3 && i === 2 || r0.length === 2 && i === 1)) return
+        assert.equal(pub.verifyCipherBin(r0[i], rh0), 0)
+        assert.equal(pub.verifyCipherBin(r1[i], rh1), 1)
+        checkCipher(r0[i], rh1)
+        checkCipher(r1[i], rh0)
       })
     }
   })
