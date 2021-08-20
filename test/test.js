@@ -101,7 +101,7 @@ function verifyCipherTextBinTest () {
       pub.verifyCipherTextBin(r, rh)
       throw 'error'
     } catch (e) {
-      assert.equal(e, errMsg)
+      assert(String(e).indexOf('verifyCipherTextBin') >= 0)
     }
   }
   const methods = ['encG1', 'encG2', 'encGT', 'encWithZkpBinG2', 'encWithZkpBinG1']
