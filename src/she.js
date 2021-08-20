@@ -524,7 +524,9 @@ const setupFactory = (createModule, getRandomValues) => {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
 
-      benalohBin (c, randHistory) {
+      // return m (0 or 1) if c is generated ciphertext of m by randHistory
+      // otherwise throw exception
+      verifyCipherBin (c, randHistory) {
         let method
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           method = 'encG1'
@@ -533,20 +535,15 @@ const setupFactory = (createModule, getRandomValues) => {
         } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
           method = 'encGT'
         } else {
-          throw ('exports.PublicKey.benalohBin:not supported')
+          throw ('PublicKey.verifyCipherBin:not supported')
         }
-
-        const c0 = this[method](0, randHistory)
-
         const serializedC = c.serializeToHexStr()
-        if(c0.serializeToHexStr() === serializedC ) return 0
 
-        const c1 = this[method](1, randHistory)
-
-        if(c1.serializeToHexStr() === serializedC) return 1
-
-        throw ('exports.PublicKey.benalohBin:c not matched')
-
+        for (let m = 0; m < 2; m++) {
+          const c = this[method](m, randHistory)
+          if (c.serializeToHexStr() === serializedC) return m
+        }
+        throw ('PublicKey.verifyCipherBin:c not matched')
       }
 
       encG1 (m, rh = undefined) {
