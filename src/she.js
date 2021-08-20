@@ -524,7 +524,7 @@ const setupFactory = (createModule, getRandomValues) => {
         this._setter(mod.shePublicKeyDeserialize, s)
       }
 
-      benalohBin = ( c, randHistory) => {
+      benalohBin (c, randHistory) {
         let method
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           method = 'encG1'

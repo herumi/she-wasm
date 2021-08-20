@@ -97,45 +97,44 @@ function benalohTest () {
     const rh0 = new she.RandHistory() // empty
     const r0 = pub[method](0, rh0)
     const rh1 = new she.RandHistory() // empty
-    const r1 = pub[method](1, rh1) 
+    const r1 = pub[method](1, rh1)
     if (method.indexOf('Zkp') === -1) {
-      assert.equal(pub.benalohBin(r0,rh0), 0)
-      assert.equal(pub.benalohBin(r1,rh1), 1)
+      assert.equal(pub.benalohBin(r0, rh0), 0)
+      assert.equal(pub.benalohBin(r1, rh1), 1)
       try {
-        pub.benalohBin(r0,rh1)
+        pub.benalohBin(r0, rh1)
         throw 'error'
-      } catch(e){
-        assert.equal(e,'exports.PublicKey.benalohBin:c not matched')
+      } catch (e) {
+        assert.equal(e, 'exports.PublicKey.benalohBin:c not matched')
       }
       try {
-        pub.benalohBin(r1,rh0)
+        pub.benalohBin(r1, rh0)
         throw 'error'
-      } catch(e){
-        assert.equal(e,'exports.PublicKey.benalohBin:c not matched')
+      } catch (e) {
+        assert.equal(e, 'exports.PublicKey.benalohBin:c not matched')
       }
     } else {
       r0.forEach((v, i) => {
         // Do not test zkp
-        if((r0.length === 3 && i ===2 || r0.length === 2 && i === 1)) return 
-        assert.equal(pub.benalohBin(r0[i],rh0), 0)
-        assert.equal(pub.benalohBin(r1[i],rh1), 1)
+        if ((r0.length === 3 && i === 2 || r0.length === 2 && i === 1)) return
+        assert.equal(pub.benalohBin(r0[i], rh0), 0)
+        assert.equal(pub.benalohBin(r1[i], rh1), 1)
         try {
-          pub.benalohBin(r0[i],rh1)
+          pub.benalohBin(r0[i], rh1)
           throw 'error'
-        } catch(e){
-          assert.equal(e,'exports.PublicKey.benalohBin:c not matched')
+        } catch (e) {
+          assert.equal(e, 'exports.PublicKey.benalohBin:c not matched')
         }
         try {
-          pub.benalohBin(r1[i],rh0)
+          pub.benalohBin(r1[i], rh0)
           throw 'error'
-        } catch(e){
-          assert.equal(e,'exports.PublicKey.benalohBin:c not matched')
+        } catch (e) {
+          assert.equal(e, 'exports.PublicKey.benalohBin:c not matched')
         }
       })
     }
   })
 }
-
 
 function encDecTest () {
   const sec = new she.SecretKey()
