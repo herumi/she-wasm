@@ -224,57 +224,9 @@ const setupFactory = (createModule, getRandomValues) => {
     mod.sheZkpDecGTSerialize = _wrapSerialize(mod._sheZkpDecGTSerialize)
     mod.sheZkpDecGTDeserialize = _wrapDeserialize(mod._sheZkpDecGTDeserialize)
 
-    /*
-      record random values used in enc methods and replay it
-    */
-    exports.RandHistory = class {
-      constructor () {
-        this.a = []
-      }
-      getStr () {
-        // Uint8Array is not array
-        return JSON.stringify(this.a.map(e=>Array.from(e)))
-      }
-      setStr (s) {
-        this.a = JSON.parse(s)
-      }
-      clear () {
-        this.a = []
-      }
-      _set () {
-        if (this.a.length === 0) {
-          // record mode
-          this.orgRandFunc_ = exports.getRandFunc()
-          exports.setRandFunc((a) => {
-            this.orgRandFunc_(a)
-            this.a.push(a)
-          })
-        } else {
-          // replay mode
-          this.orgRandFunc_ = exports.getRandFunc()
-          this.pos_ = 0
-          exports.setRandFunc((a) => {
-            const cur = this.a[this.pos_]
-            if (a.length !== cur.length) {
-              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
-            }
-             a.set(cur)
-             this.pos_++
-          })
-        }
-      }
-      _reset () {
-        exports.setRandFunc(this.orgRandFunc_)
-      }
-    }
-    exports.strToRandHistory = (s) => {
-      const rh = new exports.RandHistory()
-      rh.setStr(s)
-      return rh
-    }
     class Common {
-      constructor (size) {
-        this.a_ = new Uint32Array(size / 4)
+      constructor (size, arrayType = Uint32Array ) {
+        this.a_ = new arrayType(size / 4)
       }
       deserializeHexStr (s) {
         this.deserialize(exports.fromHexStr(s))
@@ -330,6 +282,80 @@ const setupFactory = (createModule, getRandomValues) => {
         return r === 1
       }
     }
+
+    exports.RandHistory = class extends Common {
+      constructor () {
+        super(MCLBN_FR_SIZE*4, Uint8Array)
+        this.all_a = []
+      }
+
+      static add(r1, r2){
+        // Enc random is always at position 0 in rand history
+        r1.a_ = new Uint8Array(r1.all_a[0])
+        r2.a_ = new Uint8Array(r2.all_a[0])
+        const rx = new exports.RandHistory()
+        const posRx = rx._alloc()
+        const posR1 = r1._allocAndCopy()
+        const posR2 = r2._allocAndCopy()
+        mod._mclBnFr_add(posRx,posR1,posR2)
+        _free(posR1)
+        _free(posR2)
+        rx._saveAndFree(posRx)
+        rx.all_a = [rx.a_]
+        console.log(rx.a_.length)
+        console.log(rx.a_)
+        r1.a_ = undefined
+        r2.a_ = undefined
+        rx.a_ = undefined
+        return rx
+      }
+      getStr () {
+        // Uint8Array is not array
+        return JSON.stringify(this.all_a.map(e=>Array.from(e)))
+      }
+      setStr (s) {
+        this.all_a = JSON.parse(s)
+      }
+      clear () {
+        this.all_a = []
+      }
+      _set (soft = false) {
+        if (this.all_a.length === 0) {
+          // record mode
+          this.orgRandFunc_ = exports.getRandFunc()
+          exports.setRandFunc((a) => {
+            this.orgRandFunc_(a)
+            this.all_a.push(a)
+          })
+        } else {
+          // replay mode
+          this.orgRandFunc_ = exports.getRandFunc()
+          this.pos_ = 0
+          exports.setRandFunc((a) => {
+            const cur = this.all_a[this.pos_]
+            if (a.length !== cur.length) {
+              if(!soft) throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+              // Here we allow rg in soft case, just use the rg
+              this.orgRandFunc_(a)
+              return
+            }
+             a.set(cur)
+             this.pos_++
+          })
+        }
+      }
+      _reset () {
+        exports.setRandFunc(this.orgRandFunc_)
+      }
+    }
+        /*
+      record random values used in enc methods and replay it
+    */
+      exports.strToRandHistory = (s) => {
+        const rh = new exports.RandHistory()
+        rh.setStr(s)
+        return rh
+      }
     exports.SecretKey = class extends Common {
       constructor () {
         super(SHE_SECRETKEY_SIZE)

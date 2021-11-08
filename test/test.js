@@ -8,6 +8,7 @@ const curveTest = (curveType, name) => {
     .then(() => {
       try {
         console.log(`name=${name}`)
+        addRandHistory()
         verifyCipherTextBinTest()
         controlledRandomValues()
         minimumTest()
@@ -40,6 +41,18 @@ async function curveTestAll () {
 }
 
 curveTestAll()
+
+
+function addRandHistory () {
+ const r1 = new she.RandHistory()
+ const r2 = new she.RandHistory()
+ const simpleByteArray = Array.from({length: 32}).fill(1)
+ r1.all_a = [simpleByteArray]
+ r2.all_a = [simpleByteArray]
+ const rx = she.RandHistory.add(r1,r2)
+ assert.equal(rx.all_a[0].length,32)
+ assert.equal(rx.getStr(), JSON.stringify([Array.from({length: 32}).fill(2)]))
+}
 
 function minimumTest () {
   const sec = new she.SecretKey()
