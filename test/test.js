@@ -11,6 +11,7 @@ const curveTest = (curveType, name) => {
         verifyCipherTextBinTest()
         controlledRandomValues()
         minimumTest()
+        zkpSetTest()
         zkpDecTest()
         zkpDecGTTest()
         encDecTest()
@@ -343,6 +344,38 @@ function zkpBinTest () {
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
   // ZKP bin eq not supported on pre computed
+  ppub.destroy()
+}
+
+function zkpSetTestSub (sec, pub, encWithZkpSet) {
+  console.log(`zkpSetTestSub ${encWithZkpSet}`)
+  const mVec = [-3, 0, 1, 4, 5]
+  for (let mSize = 1; mSize <= mVec.length; mSize++) {
+    for (let i = 0; i < mSize; i++) {
+      const m = mVec[0]
+      const [c, zkp] = pub[encWithZkpSet](m, mVec)
+      assert.equal(sec.dec(c), m)
+      assert(pub.verifyZkpSet(c, zkp, mVec))
+      zkp.a_[0]++
+      assert(!pub.verifyZkpSet(c, zkp, mVec))
+    }
+  }
+  try {
+    pub[encWithZkpSet](999, mVec)
+    assert(false)
+  } catch (e) {
+    assert(true)
+  }
+}
+
+function zkpSetTest () {
+  console.log('zkpSetTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  zkpSetTestSub(sec, ppub, 'encWithZkpSetG1')
   ppub.destroy()
 }
 

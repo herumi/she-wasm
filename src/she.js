@@ -145,6 +145,21 @@ const setupFactory = (createModule, getRandomValues) => {
       _free(pubPos)
       return r
     }
+    const callPPKEncWithZkpSet = (func, cstr, pubPos, m, mVec) => {
+      const mSize = mVec.length
+      const c = new cstr()
+      const cPos = c._alloc()
+      const zkp = new exports.ZkpSet(mSize)
+      const zkpPos = zkp._alloc()
+      const tm = new exports.IntVec(mVec)
+      const mVecPos = tm._allocAndCopy()
+      const r = func(cPos, zkpPos, pubPos, m, mVecPos, mSize)
+      _free(mVecPos)
+      zkp._saveAndFree(zkpPos)
+      c._saveAndFree(cPos)
+      if (r) throw ('encWithZkpBin:bad m:' + m)
+      return [c, zkp]
+    }
     const callPPKEnc = (func, cstr, ppub, m) => {
       const c = new cstr()
       const cPos = c._alloc()
@@ -495,6 +510,12 @@ const setupFactory = (createModule, getRandomValues) => {
         if (rh) rh._reset()
         return r
       }
+      encWithZkpSetG1 (m, mVec, rh = undefined) {
+        if (rh) rh._set()
+        const r = callPPKEncWithZkpSet(mod._shePrecomputedPublicKeyEncWithZkpSetG1, exports.CipherTextG1, this.p, m, mVec)
+        if (rh) rh._reset()
+        return r
+      }
       verify (c, zkp) {
         let verify = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
@@ -502,12 +523,32 @@ const setupFactory = (createModule, getRandomValues) => {
         } else
         if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
           verify = mod._shePrecomputedPublicKeyVerifyZkpBinG2
-        } else {
-          throw ('exports.verify:bad type')
+        }
+        if (verify === null) {
+          throw ('exports.verifyZkpBin:bad type')
         }
         const cPos = c._allocAndCopy()
         const zkpPos = zkp._allocAndCopy()
         const r = verify(this.p, cPos, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        return r === 1
+      }
+      verifyZkpSet (c, zkp, mVec) {
+        let verify = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          verify = mod._shePrecomputedPublicKeyVerifyZkpSetG1
+        }
+        if (verify === null) {
+          throw ('exports.verify:bad type')
+        }
+        const mSize = mVec.length
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const tm = new exports.IntVec(mVec)
+        const mVecPos = tm._allocAndCopy()
+        const r = verify(this.p, cPos, zkpPos, mVecPos, mSize)
+        _free(mVecPos)
         _free(zkpPos)
         _free(cPos)
         return r === 1
@@ -863,6 +904,30 @@ const setupFactory = (createModule, getRandomValues) => {
         _free(cPos)
         _free(auxPos)
         return r === 1
+      }
+    }
+
+    exports.IntVec = class extends Common {
+      constructor (a) {
+        super(0)
+        this.a_ = new Uint32Array(a)
+      }
+      serialize () {
+        //
+      }
+      deserialize (s) {
+        //
+      }
+    }
+    exports.ZkpSet = class extends Common {
+      constructor (n) {
+        super(MCLBN_FR_SIZE * 2 * n)
+      }
+      serialize () {
+        //
+      }
+      deserialize (s) {
+        //
       }
     }
 
