@@ -246,6 +246,42 @@ const setupFactory = (createModule, getRandomValues) => {
       constructor () {
         this.a = []
       }
+      // alloc and convert byte array to Fr in the same way as setByCSPRNG()
+      _allocAndConvert () {
+        const n = this.a[0].length
+        const pos = mod._malloc(n)
+        mod.HEAP8.set(this.a[0], pos)
+        mod._mclBnFr_setLittleEndian(pos, pos, n)
+        return pos
+      }
+      // convert Fr to byte array and free
+      _convertAndFree (pos) {
+        const n = this.a[0].length
+        mod._mclBnFr_serialize(pos, n, pos)
+        this.a[0].set(mod.HEAP8.subarray(pos, pos + n))
+        _free(pos)
+      }
+      // r1 and r2 must be created by encG1()
+      static add (r1, r2) {
+        if (r1.a.length !== 1 || r2.a.length !== 1) {
+          throw (`RandHistory:add:bad size of a:r1=${r1.a.length} r2=${r2.a.length}`)
+        }
+        const n = r1.a[0].length
+        // a[0] is not Uint32Array but Uint8Array
+        if (n !== r2.a[0].length || n !== MCLBN_FR_SIZE) {
+          throw (`RandHistory.add:bad size:n=${n} r2=${r2.a[0].length}`)
+        }
+        const r = new exports.RandHistory()
+        r.a.push(new Uint8Array(n))
+        const r1Pos = r1._allocAndConvert()
+        const r2Pos = r2._allocAndConvert()
+        const rPos = mod._malloc(n)
+        mod._mclBnFr_add(rPos, r1Pos, r2Pos)
+        r._convertAndFree(rPos)
+        _free(r2Pos)
+        _free(r1Pos)
+        return r
+      }
       getStr () {
         // Uint8Array is not array
         return JSON.stringify(this.a.map(e=>Array.from(e)))

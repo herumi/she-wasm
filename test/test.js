@@ -11,6 +11,7 @@ const curveTest = (curveType, name) => {
         verifyCipherTextBinTest()
         controlledRandomValues()
         minimumTest()
+        randHistoryAddTest()
         zkpSetTest()
         zkpDecTest()
         zkpDecGTTest()
@@ -60,6 +61,27 @@ function minimumTest () {
   const c2 = she.add(c21, c22)
   const ct = she.mul(c1, c2)
   assert.equal(sec.dec(ct), (m1 + m2) * (m3 + m4))
+}
+
+function randHistoryAddTest () {
+  console.log('randHistoryAddTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  for (let i = 0; i < 10; i++) {
+    const r1 = new she.RandHistory()
+    const r2 = new she.RandHistory()
+    const m1 = 12 + i
+    const m2 = 34 + i
+    const c1 = pub.encG1(m1, r1)
+    const c2 = pub.encG1(m2, r2)
+    const c12 = she.add(c1, c2)
+    const r12 = she.RandHistory.add(r1, r2)
+    const d = pub.encG1(m1 + m2, r12)
+    assert.equal(sec.dec(d), m1 + m2)
+    // d is recovered from r12
+    assert.equal(c12.serializeToHexStr(), d.serializeToHexStr())
+  }
 }
 
 function controlledRandomValues () {
