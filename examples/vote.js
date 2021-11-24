@@ -1,6 +1,6 @@
 /**
  * This example show how to perform state of art
- * homomorphic vote system using she wasm lig
+ * homomorphic vote system using she wasm lib
  * 
  * IMPORTANT: This example is focused on available she wasm operations
  * and do not cover: benaloh ballot invalidation, client/server serialization,
