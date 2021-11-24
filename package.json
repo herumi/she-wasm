@@ -4,7 +4,8 @@
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "src/index.js",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "vote": "node examples/vote.js"
   },
   "repository": {
     "type": "git",

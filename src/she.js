@@ -306,10 +306,11 @@ const setupFactory = (createModule, getRandomValues) => {
           this.pos_ = 0
           exports.setRandFunc((a) => {
             const cur = this.a[this.pos_]
-            if (a.length !== cur.length) {
+            if (cur && a.length !== cur.length) {
               throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
             }
-             a.set(cur)
+            if (cur) a.set(cur)
+            else this.orgRandFunc_(a)
              this.pos_++
           })
         }
@@ -1090,9 +1091,11 @@ const setupFactory = (createModule, getRandomValues) => {
     exports.useDecG2ViaGT = (use = 1) => {
       mod._sheUseDecG2ViaGT(use)
     }
-    const r1 = mod._sheInit(curveType, MCLBN_COMPILED_TIME_VAR)
+    const isNist = [exports.NIST_P192, exports.NIST_P224, exports.NIST_P256].includes(curveType)
+    const { initFn, rangeFn } = isNist ?  { initFn: '_sheInitG1only', rangeFn: '_sheSetRangeForG1DLP' } : { initFn: '_sheInit', rangeFn: '_sheSetRangeForDLP' }
+    const r1 = mod[initFn](curveType, MCLBN_COMPILED_TIME_VAR)
     if (r1) throw ('_sheInit err')
-    const r2 = mod._sheSetRangeForDLP(range)
+    const r2 = mod[rangeFn](range)
     if (r2) throw ('_sheSetRangeForDLP err')
     mod._sheSetTryNum(tryNum)
   } // setup()
