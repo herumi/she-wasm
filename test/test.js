@@ -141,16 +141,15 @@ function verifyCipherTextBinTest (g1only) {
     check that r is not generated from rh
   */
   const checkCipher = (r, rh) => {
-    const errMsg = 'PublicKey.verifyCipherTextBin:c not matched'
     try {
       pub.verifyCipherTextBin(r, rh)
-      throw 'error'
+      throw new Error('not here')
     } catch (e) {
       assert(String(e).indexOf('verifyCipherTextBin') >= 0)
     }
   }
   let methods = ['encG1', 'encWithZkpBinG1']
-  if (!g1only) methods = methods.concat(['encG2', 'encGT', 'encWithZkpBinG2'])
+  if (!g1only) methods = methods.concat(['encG2', 'encWithZkpBinG2', 'encGT'])
   methods.forEach(method => {
     const rh0 = new she.RandHistory() // empty
     const r0 = pub[method](0, rh0)
@@ -164,9 +163,8 @@ function verifyCipherTextBinTest (g1only) {
     } else {
       r0.forEach((v, i) => {
         // Do not test zkp
-        if ((r0.length === 3 && i === 2 || r0.length === 2 && i === 1)) return
-        assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
-        assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
+//      assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
+//      assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
         checkCipher(r0[i], rh1)
         checkCipher(r1[i], rh0)
       })
