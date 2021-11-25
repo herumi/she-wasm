@@ -377,8 +377,7 @@ class Server {
 }
 
 (async () => {
-  // Use NIST since we only need G1
-  await she.init(she.NIST_P256, 1024, 2048)
+  await she.init(she.SECP256K1, 1024, 10)
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
