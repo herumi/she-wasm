@@ -1090,10 +1090,14 @@ const setupFactory = (createModule, getRandomValues) => {
     exports.useDecG2ViaGT = (use = 1) => {
       mod._sheUseDecG2ViaGT(use)
     }
-    const r1 = mod._sheInit(curveType, MCLBN_COMPILED_TIME_VAR)
-    if (r1) throw ('_sheInit err')
-    const r2 = mod._sheSetRangeForDLP(range)
-    if (r2) throw ('_sheSetRangeForDLP err')
+    const g1only = exports.SECP224K1 <= curveType && curveType <= exports.NIST_P256;
+    const initFunc = g1only ? mod._sheInitG1only : mod._sheInit
+    const setRangeFunc = g1only ? mod._sheSetRangeForG1DLP : mod._sheSetRangeForDLP
+
+    const r1 = initFunc(curveType, MCLBN_COMPILED_TIME_VAR)
+    if (r1) throw (`init g1only=${g1only} err=${r1}`)
+    const r2 = setRangeFunc(range)
+    if (r2) throw (`setRange g1only${g1only} err=${r2}`)
     mod._sheSetTryNum(tryNum)
   } // setup()
   const _cryptoGetRandomValues = function(p, n) {
