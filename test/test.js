@@ -130,6 +130,22 @@ function controlledRandomValues (g1only) {
       })
     }
   })
+  {
+    const ppub = new she.PrecomputedPublicKey()
+    ppub.init(pub)
+    const rh = new she.RandHistory()
+    const m = 5
+    const mVec = [1, 2, 5, 7]
+    const [c1, zkp1] = ppub.encWithZkpSetG1(m, mVec, rh)
+    assert.equal(sec.dec(c1), m)
+    assert(ppub.verifyZkpSet(c1, zkp1, mVec))
+    const [c2, zkp2] = ppub.encWithZkpSetG1(m, mVec, rh)
+    assert.equal(sec.dec(c2), m)
+    assert(ppub.verifyZkpSet(c2, zkp2, mVec))
+    assert.deepEqual(c1.serialize(), c2.serialize())
+    assert.deepEqual(zkp1.serialize(), zkp2.serialize())
+    ppub.destroy()
+  }
 }
 
 function verifyCipherTextBinTest (g1only) {
@@ -163,8 +179,8 @@ function verifyCipherTextBinTest (g1only) {
     } else {
       r0.forEach((v, i) => {
         // Do not test zkp
-//      assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
-//      assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
+        // assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
+        // assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
         checkCipher(r0[i], rh1)
         checkCipher(r1[i], rh0)
       })
@@ -408,6 +424,7 @@ function zkpSetTestSub (sec, pub, encWithZkpSet) {
       const [c, zkp] = pub[encWithZkpSet](m, mVec)
       assert.equal(sec.dec(c), m)
       assert(pub.verifyZkpSet(c, zkp, mVec))
+      serializeSubTest(zkp, she.ZkpSet)
       zkp.a_[0]++
       assert(!pub.verifyZkpSet(c, zkp, mVec))
     }
