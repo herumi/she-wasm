@@ -952,10 +952,10 @@ const setupFactory = (createModule, getRandomValues) => {
         this.a_ = new Uint32Array(a)
       }
       serialize () {
-        //
+        return new Uint8Array(this.a_.buffer)
       }
       deserialize (s) {
-        //
+        this.a_ = new Uint32Array(s.buffer)
       }
     }
     exports.ZkpSet = class extends Common {
@@ -963,10 +963,10 @@ const setupFactory = (createModule, getRandomValues) => {
         super(MCLBN_FR_SIZE * 2 * n)
       }
       serialize () {
-        //
+        return new Uint8Array(this.a_.buffer)
       }
       deserialize (s) {
-        //
+        this.a_ = new Uint32Array(s.buffer)
       }
     }
 
