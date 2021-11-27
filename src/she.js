@@ -261,6 +261,17 @@ const setupFactory = (createModule, getRandomValues) => {
         this.a[0].set(mod.HEAP8.subarray(pos, pos + n))
         _free(pos)
       }
+      // shallow copy n elements of this
+      copy (n = 1) {
+        const rh = new exports.RandHistory()
+        if (this.a.length < n) {
+          throw new Error(`short size n=${n}`)
+        }
+        for (let i = 0; i < n; i++) {
+          rh.a.push(this.a[i])
+        }
+        return rh
+      }
       // r1 and r2 must be created by encG1()
       static add (r1, r2) {
         if (r1.a.length !== 1 || r2.a.length !== 1) {
@@ -292,30 +303,28 @@ const setupFactory = (createModule, getRandomValues) => {
       clear () {
         this.a = []
       }
+      /*
+        reply mode : if this.a[pos] exists, then randFunc() returns the value as a random value
+        record mode : otherwise, the original randFunc() returns the value and record the value in a[pos]
+      */
       _set () {
         this.orgRandFunc_ = exports.getRandFunc()
-        if (this.a.length === 0) {
-          // record mode
-          exports.setRandFunc((a) => {
+        this.pos_ = 0
+        exports.setRandFunc((a) => {
+          const cur = this.a[this.pos_]
+          if (cur) {
+            // if cur exists, then use it
+            if (a.length !== cur.length) {
+              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+            }
+            a.set(cur)
+          } else {
+            // if cur does not exist, then use orgRandFunc and record it
             this.orgRandFunc_(a)
             this.a.push(a)
-          })
-        } else {
-          // replay mode
-          this.pos_ = 0
-          exports.setRandFunc((a) => {
-            const cur = this.a[this.pos_]
-            if (cur) {
-              if (a.length !== cur.length) {
-                throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
-              }
-              a.set(cur)
-            } else {
-              this.orgRandFunc_(a)
-            }
-            this.pos_++
-          })
-        }
+          }
+          this.pos_++
+        })
       }
       _reset () {
         exports.setRandFunc(this.orgRandFunc_)
