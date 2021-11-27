@@ -134,13 +134,12 @@ class Client {
     const rh = new she.RandHistory()
     const [c, zkp] = this.pub.encWithZkpBinG1(m, rh)
     // This new random history will be used to perform random history additions
-    const rhCypherText = new she.RandHistory()
     /*
       For random history addition, random history need
       to only have 1 element, the first element of the listRh
       is the random value used to encrypt listId value
     */
-    rhCypherText.a = [rh.a[0]]
+    const rhCypherText = rh.copy(1)
     return { c, zkp, rh, rhCypherText, m }
   }
 
