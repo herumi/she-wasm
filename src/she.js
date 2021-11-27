@@ -244,46 +244,46 @@ const setupFactory = (createModule, getRandomValues) => {
     */
     exports.RandHistory = class {
       constructor () {
-        this.a = []
+        this.a_ = []
       }
       // alloc and convert byte array to Fr in the same way as setByCSPRNG()
       _allocAndConvert () {
-        const n = this.a[0].length
+        const n = this.a_[0].length
         const pos = mod._malloc(n)
-        mod.HEAP8.set(this.a[0], pos)
+        mod.HEAP8.set(this.a_[0], pos)
         mod._mclBnFr_setLittleEndian(pos, pos, n)
         return pos
       }
       // convert Fr to byte array and free
       _convertAndFree (pos) {
-        const n = this.a[0].length
+        const n = this.a_[0].length
         mod._mclBnFr_serialize(pos, n, pos)
-        this.a[0].set(mod.HEAP8.subarray(pos, pos + n))
+        this.a_[0].set(mod.HEAP8.subarray(pos, pos + n))
         _free(pos)
       }
       // shallow copy n elements of this
       copy (n = 1) {
         const rh = new exports.RandHistory()
-        if (this.a.length < n) {
+        if (this.a_.length < n) {
           throw new Error(`short size n=${n}`)
         }
         for (let i = 0; i < n; i++) {
-          rh.a.push(this.a[i])
+          rh.a_.push(this.a_[i])
         }
         return rh
       }
       // r1 and r2 must be created by encG1()
       static add (r1, r2) {
-        if (r1.a.length !== 1 || r2.a.length !== 1) {
-          throw (`RandHistory:add:bad size of a:r1=${r1.a.length} r2=${r2.a.length}`)
+        if (r1.a_.length !== 1 || r2.a_.length !== 1) {
+          throw (`RandHistory:add:bad size of a:r1=${r1.a_.length} r2=${r2.a_.length}`)
         }
-        const n = r1.a[0].length
-        // a[0] is not Uint32Array but Uint8Array
-        if (n !== r2.a[0].length || n !== MCLBN_FR_SIZE) {
-          throw (`RandHistory.add:bad size:n=${n} r2=${r2.a[0].length}`)
+        const n = r1.a_[0].length
+        // a_[0] is not Uint32Array but Uint8Array
+        if (n !== r2.a_[0].length || n !== MCLBN_FR_SIZE) {
+          throw (`RandHistory.add:bad size:n=${n} r2=${r2.a_[0].length}`)
         }
         const r = new exports.RandHistory()
-        r.a.push(new Uint8Array(n))
+        r.a_.push(new Uint8Array(n))
         const r1Pos = r1._allocAndConvert()
         const r2Pos = r2._allocAndConvert()
         const rPos = mod._malloc(n)
@@ -295,33 +295,33 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       getStr () {
         // Uint8Array is not array
-        return JSON.stringify(this.a.map(e=>Array.from(e)))
+        return JSON.stringify(this.a_.map(e=>Array.from(e)))
       }
       setStr (s) {
-        this.a = JSON.parse(s)
+        this.a_ = JSON.parse(s)
       }
       clear () {
-        this.a = []
+        this.a_ = []
       }
       /*
-        reply mode : if this.a[pos] exists, then randFunc() returns the value as a random value
-        record mode : otherwise, the original randFunc() returns the value and record the value in a[pos]
+        reply mode : if this.a_[pos] exists, then randFunc() returns the value as a random value
+        record mode : otherwise, the original randFunc() returns the value and record the value in a_[pos]
       */
       _set () {
         this.orgRandFunc_ = exports.getRandFunc()
         this.pos_ = 0
         exports.setRandFunc((a) => {
-          const cur = this.a[this.pos_]
+          const cur = this.a_[this.pos_]
           if (cur) {
             // if cur exists, then use it
             if (a.length !== cur.length) {
-              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+              throw (`bad length a.len=${a_.length}, pos_=${this.pos_}, len=${cur.length}`)
             }
             a.set(cur)
           } else {
             // if cur does not exist, then use orgRandFunc and record it
             this.orgRandFunc_(a)
-            this.a.push(a)
+            this.a_.push(a)
           }
           this.pos_++
         })
