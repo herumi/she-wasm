@@ -10,6 +10,7 @@ const curveTest = (curveType, name) => {
         const g1only = she.g1only
         console.log(`name=${name} g1only=${g1only}`)
         verifyCipherTextBinTest(g1only)
+        partialRecordTest()
         controlledRandomValues(g1only)
         minimumTestG1()
         randHistoryAddTest()
@@ -447,6 +448,61 @@ function zkpSetTest () {
   zkpSetTestSub(sec, ppub, 'encWithZkpSetG1')
   ppub.destroy()
 }
+
+function partialRecordTest () {
+  console.log('partialRecordTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const rh1 = new she.RandHistory()
+  const rh2 = new she.RandHistory()
+  const m1 = 1
+  const m2 = 0
+  const c1 = ppub.encG1(m1, rh1)
+  const c2 = ppub.encG1(m2, rh2)
+  {
+    const rh1top = rh1.copy(1)
+    const rh2top = rh2.copy(1)
+    const rhsum = she.RandHistory.add(rh1top, rh2top)
+    const [c11, zkp1] = ppub.encWithZkpBinG1(m1, rh1top)
+    const [c21, zkp2] = ppub.encWithZkpBinG1(m2, rh2top)
+    assert(pub.verify(c11, zkp1))
+    assert(pub.verify(c21, zkp2))
+    const csum = she.add(c11, c21)
+    assert.equal(sec.dec(csum), m1 + m2)
+    // recover csum2 by rhsum
+    const csum2 = ppub.encG1(m1 + m2, rhsum)
+    assert.equal(csum.serializeToHexStr(), csum2.serializeToHexStr())
+
+    assert.equal(pub.verifyCipherTextBin(c11, rh1top), m1)
+    assert.equal(pub.verifyCipherTextBin(c21, rh2top), m2)
+    assert.equal(c1.serializeToHexStr(), c11.serializeToHexStr())
+    assert.equal(c2.serializeToHexStr(), c21.serializeToHexStr())
+  }
+
+  {
+    const rh1top = rh1.copy(1)
+    const rh2top = rh2.copy(1)
+    const rhsum = she.RandHistory.add(rh1top, rh2top)
+    const [c11, zkp1] = ppub.encWithZkpSetG1(m1, [0, 1], rh1top)
+    const [c21, zkp2] = ppub.encWithZkpSetG1(m2, [0, 1], rh2top)
+    const csum = she.add(c11, c21)
+    assert.equal(sec.dec(csum), m1 + m2)
+    assert.equal(sec.dec(c11), m1)
+    assert.equal(sec.dec(c21), m2)
+    assert(ppub.verifyZkpSet(c11, zkp1, [0, 1]))
+    assert(ppub.verifyZkpSet(c21, zkp2, [0, 1]))
+    assert.equal(c1.serializeToHexStr(), c11.serializeToHexStr())
+    assert.equal(c2.serializeToHexStr(), c21.serializeToHexStr())
+    const [c, zkp] = ppub.encWithZkpSetG1(m1 + m2, [0, 1, 2], rhsum)
+    assert.equal(c.serializeToHexStr(), csum.serializeToHexStr())
+    assert(ppub.verifyZkpSet(c, zkp, [0, 1, 2]))
+  }
+  ppub.destroy()
+}
+
 
 function zkpEqTest () {
   console.log('zkpEqTest')
