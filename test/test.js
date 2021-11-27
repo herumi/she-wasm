@@ -476,8 +476,8 @@ function partialRecordTest () {
     const csum2 = ppub.encG1(m1 + m2, rhsum)
     assert.equal(csum.serializeToHexStr(), csum2.serializeToHexStr())
 
-    assert.equal(pub.verifyCipherTextBin(c11, rh1top), m1)
-    assert.equal(pub.verifyCipherTextBin(c21, rh2top), m2)
+    assert.equal(ppub.verifyCipherTextBin(c11, rh1top), m1)
+    assert.equal(ppub.verifyCipherTextBin(c21, rh2top), m2)
     assert.equal(c1.serializeToHexStr(), c11.serializeToHexStr())
     assert.equal(c2.serializeToHexStr(), c21.serializeToHexStr())
   }

@@ -213,6 +213,28 @@ const setupFactory = (createModule, getRandomValues) => {
       if (n == 0) throw ('callLoadTable err')
     }
 
+    // return m (0 or 1) if c is generated ciphertext of m by randHistory
+    // otherwise throw exception
+    const _verifyCipherTextBin = (self, msg, c, randHistory) => {
+      let method
+      if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+        method = 'encG1'
+      } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+        method = 'encG2'
+      } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+        method = 'encGT'
+      } else {
+        throw (`${msg}.verifyCipherTextBin:not supported`)
+      }
+      const serializedC = c.serializeToHexStr()
+
+      for (let m = 0; m < 2; m++) {
+        const c = self[method](m, randHistory)
+        if (c.serializeToHexStr() === serializedC) return m
+      }
+      throw (`${msg}.verifyCipherTextBin:c not matched`)
+    }
+
     mod.sheSecretKeySerialize = _wrapSerialize(mod._sheSecretKeySerialize)
     mod.sheSecretKeyDeserialize = _wrapDeserialize(mod._sheSecretKeyDeserialize)
     mod.shePublicKeySerialize = _wrapSerialize(mod._shePublicKeySerialize)
@@ -527,6 +549,12 @@ const setupFactory = (createModule, getRandomValues) => {
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
         _free(pubPos)
       }
+      // return m (0 or 1) if c is generated ciphertext of m by randHistory
+      // otherwise throw exception
+      verifyCipherTextBin (c, randHistory) {
+        return _verifyCipherTextBin(this, 'PrecomputedPublicKey', c, randHistory)
+      }
+
       encG1 (m, rh = undefined) {
         if (rh) rh._set()
         const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
@@ -616,23 +644,7 @@ const setupFactory = (createModule, getRandomValues) => {
       // return m (0 or 1) if c is generated ciphertext of m by randHistory
       // otherwise throw exception
       verifyCipherTextBin (c, randHistory) {
-        let method
-        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          method = 'encG1'
-        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          method = 'encG2'
-        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
-          method = 'encGT'
-        } else {
-          throw ('PublicKey.verifyCipherTextBin:not supported')
-        }
-        const serializedC = c.serializeToHexStr()
-
-        for (let m = 0; m < 2; m++) {
-          const c = this[method](m, randHistory)
-          if (c.serializeToHexStr() === serializedC) return m
-        }
-        throw ('PublicKey.verifyCipherTextBin:c not matched')
+        return _verifyCipherTextBin(this, 'PublicKey', c, randHistory)
       }
 
       encG1 (m, rh = undefined) {
