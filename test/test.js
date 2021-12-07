@@ -443,6 +443,7 @@ function zkpSetTest () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
+  zkpSetTestSub(sec, pub, 'encWithZkpSetG1')
   const ppub = new she.PrecomputedPublicKey()
   ppub.init(pub)
   zkpSetTestSub(sec, ppub, 'encWithZkpSetG1')

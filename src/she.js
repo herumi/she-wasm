@@ -678,6 +678,14 @@ const setupFactory = (createModule, getRandomValues) => {
         if (rh) rh._reset()
         return r
       }
+      encWithZkpSetG1 (m, mVec, rh = undefined) {
+        if (rh) rh._set()
+        const pubPos = this._allocAndCopy()
+        const r = callPPKEncWithZkpSet(mod._sheEncWithZkpSetG1, exports.CipherTextG1, pubPos, m, mVec)
+        _free(pubPos)
+        if (rh) rh._reset()
+        return r
+      }
 
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpBinEq (m, rh = undefined) {
@@ -772,6 +780,27 @@ const setupFactory = (createModule, getRandomValues) => {
         _free(cPos)
         _free(pubPos)
         return r == 1
+      }
+      verifyZkpSet (c, zkp, mVec) {
+        let verify = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          verify = mod._sheVerifyZkpSetG1
+        }
+        if (verify === null) {
+          throw ('exports.verify:bad type')
+        }
+        const pubPos = this._allocAndCopy()
+        const mSize = mVec.length
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const tm = new exports.IntVec(mVec)
+        const mVecPos = tm._allocAndCopy()
+        const r = verify(pubPos, cPos, zkpPos, mVecPos, mSize)
+        _free(mVecPos)
+        _free(zkpPos)
+        _free(cPos)
+        _free(pubPos)
+        return r === 1
       }
       verifyZkpDec (c, zkp, m) {
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
