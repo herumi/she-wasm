@@ -34,6 +34,6 @@
   },
   "homepage": "https://github.com/herumi/she-wasm#readme",
   "devDependencies": {
-    "standard": "^10.0.3"
+    "standard": "^16.0.4"
   }
 }
