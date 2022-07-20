@@ -7,23 +7,30 @@ const curveTest = (curveType, name) => {
   she.init(curveType)
     .then(() => {
       try {
-        console.log(`name=${name}`)
-        verifyCipherTextBinTest()
-        controlledRandomValues()
-        minimumTest()
+        const g1only = she.g1only
+        console.log(`name=${name} g1only=${g1only}`)
+        verifyCipherTextBinTest(g1only)
+        partialRecordTest()
+        controlledRandomValues(g1only)
+        minimumTestG1()
+        randHistoryAddTest()
+        zkpSetTest()
         zkpDecTest()
-        zkpDecGTTest()
-        encDecTest()
-        serializeTest()
-        rerandTest()
-        convertTest()
-        ppubTest()
-        finalExpTest()
-        loadTableTest()
-        zkpBinTest()
-        zkpEqTest()
-        mulIntTest()
-        benchmark()
+        encDecTest(g1only)
+        serializeTest(g1only)
+        rerandTest(g1only)
+        ppubTest(g1only)
+        zkpBinTest(g1only)
+        mulIntTest(g1only)
+        if (!g1only) {
+          minimumTest()
+          zkpDecGTTest()
+          convertTest()
+          finalExpTest()
+          loadTableTest()
+          zkpEqTest()
+        }
+        benchmark(g1only)
       } catch (e) {
         console.error('TEST FAIL')
         console.error(e)
@@ -35,6 +42,7 @@ const curveTest = (curveType, name) => {
 async function curveTestAll () {
   // can't parallel
   await curveTest(she.BN254, 'BN254')
+  await curveTest(she.SECP256K1, 'SECP256K1')
   await curveTest(she.BN_SNARK1, 'BN_SNARK1')
   await curveTest(she.BLS12_381, 'BLS12_381')
 }
@@ -61,11 +69,48 @@ function minimumTest () {
   assert.equal(sec.dec(ct), (m1 + m2) * (m3 + m4))
 }
 
-function controlledRandomValues () {
+function minimumTestG1 () {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
-  const methods = ['encG1', 'encG2', 'encGT', 'encWithZkpEq', 'encWithZkpBinEq', 'encWithZkpBinG2', 'encWithZkpBinG1']
+  const m1 = 9
+  const m2 = 5
+  const c1 = pub.encG1(m1)
+  assert.equal(sec.dec(c1), m1)
+  const c2 = pub.encG1(m2)
+  assert.equal(sec.dec(c2), m2)
+  const c12 = she.add(c1, c2)
+  assert.equal(sec.dec(c12), m1 + m2)
+}
+
+function randHistoryAddTest () {
+  console.log('randHistoryAddTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  for (let i = 0; i < 10; i++) {
+    const r1 = new she.RandHistory()
+    const r2 = new she.RandHistory()
+    const m1 = 12 + i
+    const m2 = 34 + i
+    const c1 = pub.encG1(m1, r1)
+    const c2 = pub.encG1(m2, r2)
+    const c12 = she.add(c1, c2)
+    const r12 = she.RandHistory.add(r1, r2)
+    const d = pub.encG1(m1 + m2, r12)
+    assert.equal(sec.dec(d), m1 + m2)
+    // d is recovered from r12
+    assert.equal(c12.serializeToHexStr(), d.serializeToHexStr())
+  }
+}
+
+function controlledRandomValues (g1only) {
+  console.log(`controlledRandomValues g1only=${g1only}`)
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  let methods = ['encG1', 'encWithZkpBinG1']
+  if (!g1only) methods = methods.concat(['encG1', 'encWithZkpBinG1', 'encG2', 'encGT', 'encWithZkpEq', 'encWithZkpBinEq', 'encWithZkpBinG2'])
   methods.forEach(method => {
     const rh = new she.RandHistory() // empty
     const r0 = pub[method](1)
@@ -86,9 +131,26 @@ function controlledRandomValues () {
       })
     }
   })
+  {
+    const ppub = new she.PrecomputedPublicKey()
+    ppub.init(pub)
+    const rh = new she.RandHistory()
+    const m = 5
+    const mVec = [1, 2, 5, 7]
+    const [c1, zkp1] = ppub.encWithZkpSetG1(m, mVec, rh)
+    assert.equal(sec.dec(c1), m)
+    assert(ppub.verifyZkpSet(c1, zkp1, mVec))
+    const [c2, zkp2] = ppub.encWithZkpSetG1(m, mVec, rh)
+    assert.equal(sec.dec(c2), m)
+    assert(ppub.verifyZkpSet(c2, zkp2, mVec))
+    assert.deepEqual(c1.serialize(), c2.serialize())
+    assert.deepEqual(zkp1.serialize(), zkp2.serialize())
+    ppub.destroy()
+  }
 }
 
-function verifyCipherTextBinTest () {
+function verifyCipherTextBinTest (g1only) {
+  console.log(`verifyCipherTextBinTest g1only=${g1only}`)
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -96,15 +158,15 @@ function verifyCipherTextBinTest () {
     check that r is not generated from rh
   */
   const checkCipher = (r, rh) => {
-    const errMsg = 'PublicKey.verifyCipherTextBin:c not matched'
     try {
       pub.verifyCipherTextBin(r, rh)
-      throw 'error'
+      throw new Error('not here')
     } catch (e) {
       assert(String(e).indexOf('verifyCipherTextBin') >= 0)
     }
   }
-  const methods = ['encG1', 'encG2', 'encGT', 'encWithZkpBinG2', 'encWithZkpBinG1']
+  let methods = ['encG1', 'encWithZkpBinG1']
+  if (!g1only) methods = methods.concat(['encG2', 'encWithZkpBinG2', 'encGT'])
   methods.forEach(method => {
     const rh0 = new she.RandHistory() // empty
     const r0 = pub[method](0, rh0)
@@ -118,9 +180,8 @@ function verifyCipherTextBinTest () {
     } else {
       r0.forEach((v, i) => {
         // Do not test zkp
-        if ((r0.length === 3 && i === 2 || r0.length === 2 && i === 1)) return
-        assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
-        assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
+        // assert.equal(pub.verifyCipherTextBin(r0[i], rh0), 0)
+        // assert.equal(pub.verifyCipherTextBin(r1[i], rh1), 1)
         checkCipher(r0[i], rh1)
         checkCipher(r1[i], rh0)
       })
@@ -128,17 +189,18 @@ function verifyCipherTextBinTest () {
   })
 }
 
-function encDecTest () {
+function encDecTest (g1only) {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   for (let m = -3; m < 3; m++) {
     const c1 = pub.encG1(m)
     assert.equal(sec.dec(c1), m)
-    assert.equal(sec.decViaGT(c1), m)
+    if (!g1only) assert.equal(sec.decViaGT(c1), m)
     assert.equal(sec.isZero(c1), m === 0)
     const n1 = she.neg(c1)
     assert.equal(sec.dec(n1), -m)
+    if (g1only) continue
     const c2 = pub.encG2(m)
     assert.equal(sec.dec(c2), m)
     assert.equal(sec.decViaGT(c2), m)
@@ -160,7 +222,7 @@ function serializeSubTest (t, Cstr) {
   assert.deepEqual(t.serialize(), t2.serialize())
 }
 
-function serializeTest () {
+function serializeTest (g1only) {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -169,6 +231,7 @@ function serializeTest () {
   const m = 123
   const c1 = pub.encG1(m)
   serializeSubTest(c1, she.CipherTextG1)
+  if (g1only) return
   const c2 = pub.encG2(m)
   serializeSubTest(c2, she.CipherTextG2)
   const ct = pub.encGT(m)
@@ -183,13 +246,14 @@ function rerandSubTest (c, sec, pub, m) {
   assert.equal(sec.dec(c), m)
 }
 
-function rerandTest () {
+function rerandTest (g1only) {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
 
   const m = 987
   rerandSubTest(pub.encG1(m), sec, pub, m)
+  if (g1only) return
   rerandSubTest(pub.encG2(m), sec, pub, m)
   rerandSubTest(pub.encGT(m), sec, pub, m)
 }
@@ -214,7 +278,7 @@ function bench (label, count, func) {
   console.log(label + ' ' + roundTime)
 }
 
-function ppubTest () {
+function ppubTest (g1only) {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
@@ -223,15 +287,16 @@ function ppubTest () {
   const m = 1234
   const c1 = ppub.encG1(m)
   assert.equal(sec.dec(c1), m)
-  const c2 = ppub.encG2(m)
-  assert.equal(sec.dec(c2), m)
-  const ct = ppub.encGT(m)
-  assert.equal(sec.dec(ct), m)
-
   bench('PPKencG1', 100, () => ppub.encG1(m))
-  bench('PPKencG2', 100, () => ppub.encG2(m))
-  bench('PPKencGT', 100, () => ppub.encGT(m))
 
+  if (!g1only) {
+    const c2 = ppub.encG2(m)
+    assert.equal(sec.dec(c2), m)
+    bench('PPKencG2', 100, () => ppub.encG2(m))
+    const ct = ppub.encGT(m)
+    assert.equal(sec.dec(ct), m)
+    bench('PPKencGT', 100, () => ppub.encGT(m))
+  }
   ppub.destroy()
 }
 
@@ -330,21 +395,115 @@ function zkpBinEqTestSub (sec, pub, encWithZkpBinEq) {
   }
 }
 
-function zkpBinTest () {
+function zkpBinTest (g1only) {
+  console.log(`zkpBinTest g1only=${g1only}`)
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   zkpBinTestSub(sec, pub, 'encWithZkpBinG1')
-  zkpBinTestSub(sec, pub, 'encWithZkpBinG2')
-  zkpBinEqTestSub(sec, pub, 'encWithZkpBinEq')
+  if (!g1only) {
+    zkpBinTestSub(sec, pub, 'encWithZkpBinG2')
+    zkpBinEqTestSub(sec, pub, 'encWithZkpBinEq')
+  }
 
   const ppub = new she.PrecomputedPublicKey()
   ppub.init(pub)
   zkpBinTestSub(sec, ppub, 'encWithZkpBinG1')
-  zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
-  // ZKP bin eq not supported on pre computed
+  if (!g1only) {
+    zkpBinTestSub(sec, ppub, 'encWithZkpBinG2')
+    // ZKP bin eq not supported on pre computed
+  }
   ppub.destroy()
 }
+
+function zkpSetTestSub (sec, pub, encWithZkpSet) {
+  console.log(`zkpSetTestSub ${encWithZkpSet}`)
+  const mVec = [-3, 0, 1, 4, 5]
+  for (let mSize = 1; mSize <= mVec.length; mSize++) {
+    for (let i = 0; i < mSize; i++) {
+      const m = mVec[0]
+      const [c, zkp] = pub[encWithZkpSet](m, mVec)
+      assert.equal(sec.dec(c), m)
+      assert(pub.verifyZkpSet(c, zkp, mVec))
+      serializeSubTest(zkp, she.ZkpSet)
+      zkp.a_[0]++
+      assert(!pub.verifyZkpSet(c, zkp, mVec))
+    }
+  }
+  try {
+    pub[encWithZkpSet](999, mVec)
+    assert(false)
+  } catch (e) {
+    assert(true)
+  }
+}
+
+function zkpSetTest () {
+  console.log('zkpSetTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  zkpSetTestSub(sec, pub, 'encWithZkpSetG1')
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  zkpSetTestSub(sec, ppub, 'encWithZkpSetG1')
+  ppub.destroy()
+}
+
+function partialRecordTest () {
+  console.log('partialRecordTest')
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const rh1 = new she.RandHistory()
+  const rh2 = new she.RandHistory()
+  const m1 = 1
+  const m2 = 0
+  const c1 = ppub.encG1(m1, rh1)
+  const c2 = ppub.encG1(m2, rh2)
+  {
+    const rh1top = rh1.copy(1)
+    const rh2top = rh2.copy(1)
+    const rhsum = she.RandHistory.add(rh1top, rh2top)
+    const [c11, zkp1] = ppub.encWithZkpBinG1(m1, rh1top)
+    const [c21, zkp2] = ppub.encWithZkpBinG1(m2, rh2top)
+    assert(pub.verify(c11, zkp1))
+    assert(pub.verify(c21, zkp2))
+    const csum = she.add(c11, c21)
+    assert.equal(sec.dec(csum), m1 + m2)
+    // recover csum2 by rhsum
+    const csum2 = ppub.encG1(m1 + m2, rhsum)
+    assert.equal(csum.serializeToHexStr(), csum2.serializeToHexStr())
+
+    assert.equal(ppub.verifyCipherTextBin(c11, rh1top), m1)
+    assert.equal(ppub.verifyCipherTextBin(c21, rh2top), m2)
+    assert.equal(c1.serializeToHexStr(), c11.serializeToHexStr())
+    assert.equal(c2.serializeToHexStr(), c21.serializeToHexStr())
+  }
+
+  {
+    const rh1top = rh1.copy(1)
+    const rh2top = rh2.copy(1)
+    const rhsum = she.RandHistory.add(rh1top, rh2top)
+    const [c11, zkp1] = ppub.encWithZkpSetG1(m1, [0, 1], rh1top)
+    const [c21, zkp2] = ppub.encWithZkpSetG1(m2, [0, 1], rh2top)
+    const csum = she.add(c11, c21)
+    assert.equal(sec.dec(csum), m1 + m2)
+    assert.equal(sec.dec(c11), m1)
+    assert.equal(sec.dec(c21), m2)
+    assert(ppub.verifyZkpSet(c11, zkp1, [0, 1]))
+    assert(ppub.verifyZkpSet(c21, zkp2, [0, 1]))
+    assert.equal(c1.serializeToHexStr(), c11.serializeToHexStr())
+    assert.equal(c2.serializeToHexStr(), c21.serializeToHexStr())
+    const [c, zkp] = ppub.encWithZkpSetG1(m1 + m2, [0, 1, 2], rhsum)
+    assert.equal(c.serializeToHexStr(), csum.serializeToHexStr())
+    assert(ppub.verifyZkpSet(c, zkp, [0, 1, 2]))
+  }
+  ppub.destroy()
+}
+
 
 function zkpEqTest () {
   console.log('zkpEqTest')
@@ -399,38 +558,44 @@ function zkpDecGTTest () {
   assert(!aux.verify(c, zkp, m))
 }
 
-function mulIntTest () {
+function mulIntTest (g1only) {
+  console.log(`mulIntTest g1only=${g1only}`)
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   const m1 = 13
   const m2 = 24
   const c1 = she.mulInt(pub.encG1(m1), m2)
-  const c2 = she.mulInt(pub.encG2(m1), m2)
-  const ct = she.mulInt(pub.encGT(m1), m2)
   assert.equal(sec.dec(c1), m1 * m2)
+  if (g1only) return
+  const c2 = she.mulInt(pub.encG2(m1), m2)
   assert.equal(sec.dec(c2), m1 * m2)
+  const ct = she.mulInt(pub.encGT(m1), m2)
   assert.equal(sec.dec(ct), m1 * m2)
 }
 
-function benchmark () {
+function benchmark (g1only) {
   const sec = new she.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
   const m = 1234
   const C = 100
-  bench('encG1', C, () => pub.encG1(m))
-  bench('encG2', C, () => pub.encG2(m))
-  bench('encGT', C, () => pub.encGT(m))
   const c1 = pub.encG1(m)
-  const c2 = pub.encG2(m)
-  const ct = pub.encGT(m)
+  bench('encG1', C, () => pub.encG1(m))
   bench('decG1', C, () => sec.dec(c1))
-  bench('decG2', C, () => sec.dec(c2))
-  bench('decGT', C, () => sec.dec(ct))
   bench('addG1', C, () => she.add(c1, c1))
+
+  if (g1only) return
+  const c2 = pub.encG2(m)
+  bench('encG2', C, () => pub.encG2(m))
+  bench('decG2', C, () => sec.dec(c2))
   bench('addG2', C, () => she.add(c2, c2))
+
+  const ct = pub.encGT(m)
+  bench('encGT', C, () => pub.encGT(m))
+  bench('decGT', C, () => sec.dec(ct))
   bench('addGT', C, () => she.add(ct, ct))
+
   bench('mul', C, () => she.mul(c1, c2))
   bench('mulML', C, () => she.mulML(c1, c2))
   bench('finalExp', C, () => she.finalExpGT(ct))

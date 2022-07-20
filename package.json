@@ -1,6 +1,6 @@
 {
   "name": "she-wasm",
-  "version": "0.9.3",
+  "version": "1.0.0",
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "src/index.js",
   "scripts": {
@@ -16,33 +16,18 @@
     "pairing"
   ],
   "files": [
-    "src/Makefile",
+    "package.json",
     "src/index.js",
     "src/she.js",
     "src/she_c.js",
-    "browser/cross-demo.html",
-    "browser/cross-demo.js",
-    "browser/cross-demo-ja.html",
-    "browser/cross-demo-ja.js",
-    "browser/cross-demo.css",
     "browser/she.js",
-    "browser/package-lock.json",
     "browser/package.json",
-    "browser/readme.md",
-    "browser/src/index-browser.js",
-    "browser/webpack.config.js",
-    "test/test.js"
+    "browser/src/index-browser.js"
   ],
   "author": "herumi <herumi@nifty.com> (https://github.com/herumi/)",
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/herumi/she-wasm/issues"
   },
-  "engines": {
-    "node": ">=8.9.0"
-  },
-  "homepage": "https://github.com/herumi/she-wasm#readme",
-  "devDependencies": {
-    "standard": "^10.0.3"
-  }
+  "homepage": "https://github.com/herumi/she-wasm#readme"
 }

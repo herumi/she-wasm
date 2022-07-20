@@ -145,6 +145,21 @@ const setupFactory = (createModule, getRandomValues) => {
       _free(pubPos)
       return r
     }
+    const callPPKEncWithZkpSet = (func, cstr, pubPos, m, mVec) => {
+      const mSize = mVec.length
+      const c = new cstr()
+      const cPos = c._alloc()
+      const zkp = new exports.ZkpSet(mSize)
+      const zkpPos = zkp._alloc()
+      const tm = new exports.IntVec(mVec)
+      const mVecPos = tm._allocAndCopy()
+      const r = func(cPos, zkpPos, pubPos, m, mVecPos, mSize)
+      _free(mVecPos)
+      zkp._saveAndFree(zkpPos)
+      c._saveAndFree(cPos)
+      if (r) throw ('encWithZkpBin:bad m:' + m)
+      return [c, zkp]
+    }
     const callPPKEnc = (func, cstr, ppub, m) => {
       const c = new cstr()
       const cPos = c._alloc()
@@ -198,6 +213,28 @@ const setupFactory = (createModule, getRandomValues) => {
       if (n == 0) throw ('callLoadTable err')
     }
 
+    // return m (0 or 1) if c is generated ciphertext of m by randHistory
+    // otherwise throw exception
+    const _verifyCipherTextBin = (self, msg, c, randHistory) => {
+      let method
+      if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+        method = 'encG1'
+      } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+        method = 'encG2'
+      } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+        method = 'encGT'
+      } else {
+        throw (`${msg}.verifyCipherTextBin:not supported`)
+      }
+      const serializedC = c.serializeToHexStr()
+
+      for (let m = 0; m < 2; m++) {
+        const c = self[method](m, randHistory)
+        if (c.serializeToHexStr() === serializedC) return m
+      }
+      throw (`${msg}.verifyCipherTextBin:c not matched`)
+    }
+
     mod.sheSecretKeySerialize = _wrapSerialize(mod._sheSecretKeySerialize)
     mod.sheSecretKeyDeserialize = _wrapDeserialize(mod._sheSecretKeyDeserialize)
     mod.shePublicKeySerialize = _wrapSerialize(mod._shePublicKeySerialize)
@@ -229,39 +266,87 @@ const setupFactory = (createModule, getRandomValues) => {
     */
     exports.RandHistory = class {
       constructor () {
-        this.a = []
+        this.a_ = []
+      }
+      // alloc and convert byte array to Fr in the same way as setByCSPRNG()
+      _allocAndConvert () {
+        const n = this.a_[0].length
+        const pos = mod._malloc(n)
+        mod.HEAP8.set(this.a_[0], pos)
+        mod._mclBnFr_setLittleEndian(pos, pos, n)
+        return pos
+      }
+      // convert Fr to byte array and free
+      _convertAndFree (pos) {
+        const n = this.a_[0].length
+        mod._mclBnFr_serialize(pos, n, pos)
+        this.a_[0].set(mod.HEAP8.subarray(pos, pos + n))
+        _free(pos)
+      }
+      // shallow copy n elements of this
+      copy (n = 1) {
+        const rh = new exports.RandHistory()
+        if (this.a_.length < n) {
+          throw new Error(`short size n=${n}`)
+        }
+        for (let i = 0; i < n; i++) {
+          rh.a_.push(this.a_[i])
+        }
+        return rh
+      }
+      // r1 and r2 must be created by encG1()
+      static add (r1, r2) {
+        if (r1.a_.length !== 1 || r2.a_.length !== 1) {
+          throw (`RandHistory:add:bad size of a:r1=${r1.a_.length} r2=${r2.a_.length}`)
+        }
+        const n = r1.a_[0].length
+        // a_[0] is not Uint32Array but Uint8Array
+        if (n !== r2.a_[0].length || n !== MCLBN_FR_SIZE) {
+          throw (`RandHistory.add:bad size:n=${n} r2=${r2.a_[0].length}`)
+        }
+        const r = new exports.RandHistory()
+        r.a_.push(new Uint8Array(n))
+        const r1Pos = r1._allocAndConvert()
+        const r2Pos = r2._allocAndConvert()
+        const rPos = mod._malloc(n)
+        mod._mclBnFr_add(rPos, r1Pos, r2Pos)
+        r._convertAndFree(rPos)
+        _free(r2Pos)
+        _free(r1Pos)
+        return r
       }
       getStr () {
         // Uint8Array is not array
-        return JSON.stringify(this.a.map(e=>Array.from(e)))
+        return JSON.stringify(this.a_.map(e=>Array.from(e)))
       }
       setStr (s) {
-        this.a = JSON.parse(s)
+        this.a_ = JSON.parse(s)
       }
       clear () {
-        this.a = []
+        this.a_ = []
       }
+      /*
+        reply mode : if this.a_[pos] exists, then randFunc() returns the value as a random value
+        record mode : otherwise, the original randFunc() returns the value and record the value in a_[pos]
+      */
       _set () {
-        if (this.a.length === 0) {
-          // record mode
-          this.orgRandFunc_ = exports.getRandFunc()
-          exports.setRandFunc((a) => {
-            this.orgRandFunc_(a)
-            this.a.push(a)
-          })
-        } else {
-          // replay mode
-          this.orgRandFunc_ = exports.getRandFunc()
-          this.pos_ = 0
-          exports.setRandFunc((a) => {
-            const cur = this.a[this.pos_]
+        this.orgRandFunc_ = exports.getRandFunc()
+        this.pos_ = 0
+        exports.setRandFunc((a) => {
+          const cur = this.a_[this.pos_]
+          if (cur) {
+            // if cur exists, then use it
             if (a.length !== cur.length) {
-              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
+              throw (`bad length a.len=${a_.length}, pos_=${this.pos_}, len=${cur.length}`)
             }
-             a.set(cur)
-             this.pos_++
-          })
-        }
+            a.set(cur)
+          } else {
+            // if cur does not exist, then use orgRandFunc and record it
+            this.orgRandFunc_(a)
+            this.a_.push(a)
+          }
+          this.pos_++
+        })
       }
       _reset () {
         exports.setRandFunc(this.orgRandFunc_)
@@ -464,6 +549,12 @@ const setupFactory = (createModule, getRandomValues) => {
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
         _free(pubPos)
       }
+      // return m (0 or 1) if c is generated ciphertext of m by randHistory
+      // otherwise throw exception
+      verifyCipherTextBin (c, randHistory) {
+        return _verifyCipherTextBin(this, 'PrecomputedPublicKey', c, randHistory)
+      }
+
       encG1 (m, rh = undefined) {
         if (rh) rh._set()
         const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
@@ -495,6 +586,12 @@ const setupFactory = (createModule, getRandomValues) => {
         if (rh) rh._reset()
         return r
       }
+      encWithZkpSetG1 (m, mVec, rh = undefined) {
+        if (rh) rh._set()
+        const r = callPPKEncWithZkpSet(mod._shePrecomputedPublicKeyEncWithZkpSetG1, exports.CipherTextG1, this.p, m, mVec)
+        if (rh) rh._reset()
+        return r
+      }
       verify (c, zkp) {
         let verify = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
@@ -502,12 +599,32 @@ const setupFactory = (createModule, getRandomValues) => {
         } else
         if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
           verify = mod._shePrecomputedPublicKeyVerifyZkpBinG2
-        } else {
-          throw ('exports.verify:bad type')
+        }
+        if (verify === null) {
+          throw ('exports.verifyZkpBin:bad type')
         }
         const cPos = c._allocAndCopy()
         const zkpPos = zkp._allocAndCopy()
         const r = verify(this.p, cPos, zkpPos)
+        _free(zkpPos)
+        _free(cPos)
+        return r === 1
+      }
+      verifyZkpSet (c, zkp, mVec) {
+        let verify = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          verify = mod._shePrecomputedPublicKeyVerifyZkpSetG1
+        }
+        if (verify === null) {
+          throw ('exports.verify:bad type')
+        }
+        const mSize = mVec.length
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const tm = new exports.IntVec(mVec)
+        const mVecPos = tm._allocAndCopy()
+        const r = verify(this.p, cPos, zkpPos, mVecPos, mSize)
+        _free(mVecPos)
         _free(zkpPos)
         _free(cPos)
         return r === 1
@@ -527,23 +644,7 @@ const setupFactory = (createModule, getRandomValues) => {
       // return m (0 or 1) if c is generated ciphertext of m by randHistory
       // otherwise throw exception
       verifyCipherTextBin (c, randHistory) {
-        let method
-        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          method = 'encG1'
-        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          method = 'encG2'
-        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
-          method = 'encGT'
-        } else {
-          throw ('PublicKey.verifyCipherTextBin:not supported')
-        }
-        const serializedC = c.serializeToHexStr()
-
-        for (let m = 0; m < 2; m++) {
-          const c = this[method](m, randHistory)
-          if (c.serializeToHexStr() === serializedC) return m
-        }
-        throw ('PublicKey.verifyCipherTextBin:c not matched')
+        return _verifyCipherTextBin(this, 'PublicKey', c, randHistory)
       }
 
       encG1 (m, rh = undefined) {
@@ -574,6 +675,14 @@ const setupFactory = (createModule, getRandomValues) => {
       encWithZkpBinG2 (m, rh = undefined) {
         if (rh) rh._set()
         const r = callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
+        if (rh) rh._reset()
+        return r
+      }
+      encWithZkpSetG1 (m, mVec, rh = undefined) {
+        if (rh) rh._set()
+        const pubPos = this._allocAndCopy()
+        const r = callPPKEncWithZkpSet(mod._sheEncWithZkpSetG1, exports.CipherTextG1, pubPos, m, mVec)
+        _free(pubPos)
         if (rh) rh._reset()
         return r
       }
@@ -671,6 +780,27 @@ const setupFactory = (createModule, getRandomValues) => {
         _free(cPos)
         _free(pubPos)
         return r == 1
+      }
+      verifyZkpSet (c, zkp, mVec) {
+        let verify = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          verify = mod._sheVerifyZkpSetG1
+        }
+        if (verify === null) {
+          throw ('exports.verify:bad type')
+        }
+        const pubPos = this._allocAndCopy()
+        const mSize = mVec.length
+        const cPos = c._allocAndCopy()
+        const zkpPos = zkp._allocAndCopy()
+        const tm = new exports.IntVec(mVec)
+        const mVecPos = tm._allocAndCopy()
+        const r = verify(pubPos, cPos, zkpPos, mVecPos, mSize)
+        _free(mVecPos)
+        _free(zkpPos)
+        _free(cPos)
+        _free(pubPos)
+        return r === 1
       }
       verifyZkpDec (c, zkp, m) {
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
@@ -866,6 +996,30 @@ const setupFactory = (createModule, getRandomValues) => {
       }
     }
 
+    exports.IntVec = class extends Common {
+      constructor (a) {
+        super(0)
+        this.a_ = new Uint32Array(a)
+      }
+      serialize () {
+        return new Uint8Array(this.a_.buffer)
+      }
+      deserialize (s) {
+        this.a_ = new Uint32Array(s.buffer)
+      }
+    }
+    exports.ZkpSet = class extends Common {
+      constructor (n) {
+        super(MCLBN_FR_SIZE * 2 * n)
+      }
+      serialize () {
+        return new Uint8Array(this.a_.buffer)
+      }
+      deserialize (s) {
+        this.a_ = new Uint32Array(s.buffer)
+      }
+    }
+
     exports.deserializeHexStrToCipherTextGT = s => {
       const r = new exports.CipherTextGT()
       r.deserializeHexStr(s)
@@ -989,10 +1143,14 @@ const setupFactory = (createModule, getRandomValues) => {
     exports.useDecG2ViaGT = (use = 1) => {
       mod._sheUseDecG2ViaGT(use)
     }
-    const r1 = mod._sheInit(curveType, MCLBN_COMPILED_TIME_VAR)
-    if (r1) throw ('_sheInit err')
-    const r2 = mod._sheSetRangeForDLP(range)
-    if (r2) throw ('_sheSetRangeForDLP err')
+    exports.g1only = exports.SECP224K1 <= curveType && curveType <= exports.NIST_P256
+    const initFunc = exports.g1only ? mod._sheInitG1only : mod._sheInit
+    const setRangeFunc = exports.g1only ? mod._sheSetRangeForG1DLP : mod._sheSetRangeForDLP
+
+    const r1 = initFunc(curveType, MCLBN_COMPILED_TIME_VAR)
+    if (r1) throw (`init g1only=${exports.g1only} err=${r1}`)
+    const r2 = setRangeFunc(range)
+    if (r2) throw (`setRange g1only${exports.g1only} err=${r2}`)
     mod._sheSetTryNum(tryNum)
   } // setup()
   const _cryptoGetRandomValues = function(p, n) {
