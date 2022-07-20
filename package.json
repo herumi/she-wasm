@@ -1,6 +1,6 @@
 {
   "name": "she-wasm",
-  "version": "0.9.4",
+  "version": "1.0.0",
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "src/index.js",
   "scripts": {
@@ -29,11 +29,5 @@
   "bugs": {
     "url": "https://github.com/herumi/she-wasm/issues"
   },
-  "engines": {
-    "node": ">=8.9.0"
-  },
-  "homepage": "https://github.com/herumi/she-wasm#readme",
-  "devDependencies": {
-    "standard": "^16.0.4"
-  }
+  "homepage": "https://github.com/herumi/she-wasm#readme"
 }
