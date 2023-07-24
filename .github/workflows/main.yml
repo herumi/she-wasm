@@ -6,8 +6,8 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: node
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
     - run: node test/test.js
 

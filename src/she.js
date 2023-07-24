@@ -39,9 +39,37 @@ const setupFactory = (createModule, getRandomValues) => {
     const SHE_ZKPDECGT_SIZE = MCLBN_FR_SIZE * 4
     const SHE_AUX_SIZE = MCLBN_GT_SIZE * 4
 
-    const _free = pos => {
-      mod._mclBnFree(pos)
+    mod.g_his = []
+    /*
+      she libray always uses (malloc,free) in nested pairs.
+    */
+    const _mallocDebug = size => {
+      const p = mod._malloc(size + 4)
+      mod.HEAP8[p+size] = 0x12
+      mod.HEAP8[p+size+1] = 0x34
+      mod.HEAP8[p+size+2] = 0x56
+      mod.HEAP8[p+size+3] = 0x78
+      mod.g_his.push([p, size])
+      return p
     }
+    const _freeDebug = pos => {
+      const ps = mod.g_his.pop()
+      const p = ps[0]
+      const size = ps[1]
+      if (pos !== p) {
+        console.log(`pos=${pos} oldPos=${p}`)
+      }
+      const v = mod.HEAP8[p+size] + (mod.HEAP8[p+size+1]<<8) + (mod.HEAP8[p+size+2]<<16) + (mod.HEAP8[p+size+3]<<24)
+      if (v !== 0x78563412) {
+        console.log(`ERR=${p} v=${v.toString(16)}`)
+      }
+      mod._free(pos)
+    }
+//    const _malloc = _mallocDebug
+//    const _free = _freeDebug
+    const _malloc = mod._malloc
+    const _free = mod._free
+
     const ptrToAsciiStr = (pos, n) => {
       let s = ''
       for (let i = 0; i < n; i++) {
@@ -79,7 +107,7 @@ const setupFactory = (createModule, getRandomValues) => {
     const _wrapGetStr = (func, returnAsStr = true) => {
       return (x, ioMode = 0) => {
         const maxBufSize = 3096
-        const pos = mod._malloc(maxBufSize)
+        const pos = _malloc(maxBufSize)
         const n = func(pos, maxBufSize, x, ioMode)
         if (n <= 0) {
           throw new Error('err gen_str:' + x)
@@ -99,7 +127,7 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const _wrapDeserialize = func => {
       return (x, buf) => {
-        const pos = mod._malloc(buf.length)
+        const pos = _malloc(buf.length)
         mod.HEAP8.set(buf, pos)
         const r = func(x, pos, buf.length)
         _free(pos)
@@ -111,7 +139,7 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const wrap_dec = func => {
       return function (sec, c) {
-        const pos = mod._malloc(8)
+        const pos = _malloc(8)
         const r = func(pos, sec, c)
         const v = mod.HEAP32[pos / 4]
         _free(pos)
@@ -204,7 +232,7 @@ const setupFactory = (createModule, getRandomValues) => {
       return r
     }
     const callLoadTable = (func, a) => {
-      const p = mod._malloc(a.length)
+      const p = _malloc(a.length)
       for (let i = 0; i < a.length; i++) {
         mod.HEAP8[p + i] = a[i]
       }
@@ -271,7 +299,7 @@ const setupFactory = (createModule, getRandomValues) => {
       // alloc and convert byte array to Fr in the same way as setByCSPRNG()
       _allocAndConvert () {
         const n = this.a_[0].length
-        const pos = mod._malloc(n)
+        const pos = _malloc(n)
         mod.HEAP8.set(this.a_[0], pos)
         mod._mclBnFr_setLittleEndian(pos, pos, n)
         return pos
@@ -308,7 +336,7 @@ const setupFactory = (createModule, getRandomValues) => {
         r.a_.push(new Uint8Array(n))
         const r1Pos = r1._allocAndConvert()
         const r2Pos = r2._allocAndConvert()
-        const rPos = mod._malloc(n)
+        const rPos = _malloc(n)
         mod._mclBnFr_add(rPos, r1Pos, r2Pos)
         r._convertAndFree(rPos)
         _free(r2Pos)
@@ -375,7 +403,7 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       // alloc new array
       _alloc () {
-        return mod._malloc(this.a_.length * 4)
+        return _malloc(this.a_.length * 4)
       }
       // alloc and copy a_ to mod.HEAP32[pos / 4]
       _allocAndCopy () {
@@ -457,7 +485,7 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('decWithZkpDec:not supported')
         }
         const zkp = new exports.ZkpDec()
-        const mPos = mod._malloc(8)
+        const mPos = _malloc(8)
         const zkpPos = zkp._alloc()
         const secPos = this._allocAndCopy()
         const cPos = c._allocAndCopy()
@@ -477,7 +505,7 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('decWithZkpDecGT:bad c')
         }
         const zkp = new exports.ZkpDecGT()
-        const mPos = mod._malloc(8)
+        const mPos = _malloc(8)
         const zkpPos = zkp._alloc()
         const secPos = this._allocAndCopy()
         const cPos = c._allocAndCopy()
