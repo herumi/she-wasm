@@ -40,8 +40,11 @@ const setupFactory = (createModule, getRandomValues) => {
     const SHE_AUX_SIZE = MCLBN_GT_SIZE * 4
 
     mod.g_his = []
+    /*
+      she libray always uses (malloc,free) in nested pairs.
+    */
     const _mallocDebug = size => {
-      const p = mod._mclBnMalloc(size + 4)
+      const p = mod._malloc(size + 4)
       mod.HEAP8[p+size] = 0x12
       mod.HEAP8[p+size+1] = 0x34
       mod.HEAP8[p+size+2] = 0x56
@@ -60,10 +63,12 @@ const setupFactory = (createModule, getRandomValues) => {
       if (v !== 0x78563412) {
         console.log(`ERR=${p} v=${v.toString(16)}`)
       }
-      mod._mclBnFree(pos)
+      mod._free(pos)
     }
-    const _malloc = mod._mclBnMalloc
-    const _free = mod._mclBnFree
+//    const _malloc = _mallocDebug
+//    const _free = _freeDebug
+    const _malloc = mod._malloc
+    const _free = mod._free
 
     const ptrToAsciiStr = (pos, n) => {
       let s = ''
