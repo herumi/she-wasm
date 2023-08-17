@@ -14,6 +14,7 @@ EncG1(x1) * EncG2(y1) + ... + EncG1(xn) * EncG2(yn) = EncGT(x1 * y1 + ... + xn *
 see [mcl](https://github.com/herumi/mcl)
 
 # News
+- 2023/Aug/17 The performance of dec is a little improved.
 - 2022/Jul/20 v1.0.0
 - 2020/Dec/27 change file layout
 - 2020/Dec/18 `sec.decWithZkpDec(c, aux)` returns `[m, zkp]` that `zkp` proves `dec(c) = m` for CipherTextGT c, and `aux.verify(c, zkp, m)` returns the correctness where `aux = pub.getAuxiliaryForZkpDecGT()`.
