@@ -199,6 +199,14 @@ const setupFactory = (createModule, getRandomValues) => {
     // return func(x, y)
     const callAddSub = (func, cstr, x, y) => {
       const z = new cstr()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._sallocAndCopy()
+      const zPos = z._salloc()
+      func(zPos, xPos, yPos)
+      z._save(zPos)
+      mod.stackRestore(stack)
+/*
       const xPos = x._allocAndCopy()
       const yPos = y._allocAndCopy()
       const zPos = z._alloc()
@@ -206,6 +214,7 @@ const setupFactory = (createModule, getRandomValues) => {
       z._saveAndFree(zPos)
       _free(yPos)
       _free(xPos)
+*/
       return z
     }
     // return func((G1)x, (G2)y)
@@ -408,6 +417,16 @@ const setupFactory = (createModule, getRandomValues) => {
       // alloc and copy a_ to mod.HEAP32[pos / 4]
       _allocAndCopy () {
         const pos = this._alloc()
+        mod.HEAP32.set(this.a_, pos / 4)
+        return pos
+      }
+      // stack alloc new array
+      _salloc () {
+        return mod.stackAlloc(this.a_.length * 4)
+      }
+      // stack alloc and copy a_ to mod.HEAP32[pos / 4]
+      _sallocAndCopy () {
+        const pos = this._salloc()
         mod.HEAP32.set(this.a_, pos / 4)
         return pos
       }
