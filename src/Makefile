@@ -26,7 +26,7 @@ EMCC_OPT+=-s ABORTING_MALLOC=0
 EMCC_OPT+=-fexceptions
 EMCC_OPT+=-s TOTAL_MEMORY=134217728
 EMCC_OPT+=-s STACK_SIZE=1MB
-EMCC_OPT+=-sEXPORTED_FUNCTIONS=_malloc,_free
+EMCC_OPT+=-sEXPORTED_FUNCTIONS=_malloc,_free,stackAlloc,stackSave,stackRestore
 
 she_c.js:
 	emcc -o $@ $(MCL_DIR)/src/fp.cpp $(MCL_DIR)/src/she_c384_256.cpp $(EMCC_OPT)
