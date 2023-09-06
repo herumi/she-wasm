@@ -76,10 +76,10 @@ const setupFactory = (createModule, getRandomValues) => {
         mod.g_total -= s
       }
     }
-    const _malloc = _mallocDebug
-    const _free = _freeDebug
-//    const _malloc = mod._malloc
- //   const _free = mod._free
+//    const _malloc = _mallocDebug
+//    const _free = _freeDebug
+    const _malloc = mod._malloc
+    const _free = mod._free
     exports._showDebug = () => {
       if (_malloc === _mallocDebug) {
         console.log('malloc DEBUG mode')
@@ -145,10 +145,17 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const _wrapDeserialize = func => {
       return (x, buf) => {
+        const stack = mod.stackSave()
+        const pos = mod.stackAlloc(buf.length)
+        mod.HEAP8.set(buf, pos)
+        const r = func(x, pos, buf.length)
+        mod.stackRestore(stack)
+/*
         const pos = _malloc(buf.length)
         mod.HEAP8.set(buf, pos)
         const r = func(x, pos, buf.length)
         _free(pos)
+*/
         if (r === 0 || r !== buf.length) throw new Error('err _wrapDeserialize', buf)
       }
     }
@@ -157,10 +164,17 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const wrap_dec = func => {
       return function (sec, c) {
+        const stack = mod.stackSave()
+        const pos = mod.stackAlloc(8)
+        const r = func(pos, sec, c)
+        const v = mod.HEAP32[pos / 4]
+        mod.stackRestore(stack)
+/*
         const pos = _malloc(8)
         const r = func(pos, sec, c)
         const v = mod.HEAP32[pos / 4]
         _free(pos)
+*/
         if (r) throw ('sheDec')
         return v
       }
@@ -388,12 +402,24 @@ const setupFactory = (createModule, getRandomValues) => {
         mod._mclBnFr_setLittleEndian(pos, pos, n)
         return pos
       }
-      // convert Fr to byte array and free
-      _convertAndFree (pos) {
+      // convert Fr to byte array
+      _convertFr (pos) {
         const n = this.a_[0].length
         mod._mclBnFr_serialize(pos, n, pos)
         this.a_[0].set(mod.HEAP8.subarray(pos, pos + n))
+      }
+      // convert Fr to byte array and free
+      _convertFrAndFree (pos) {
+        _convertFr(pos)
         _free(pos)
+      }
+      // stack alloc and convert byte array to Fr in the same way as setByCSPRNG()
+      _sallocAndConvert () {
+        const n = this.a_[0].length
+        const pos = mod.stackAlloc(n)
+        mod.HEAP8.set(this.a_[0], pos)
+        mod._mclBnFr_setLittleEndian(pos, pos, n)
+        return pos
       }
       // shallow copy n elements of this
       copy (n = 1) {
@@ -418,13 +444,22 @@ const setupFactory = (createModule, getRandomValues) => {
         }
         const r = new exports.RandHistory()
         r.a_.push(new Uint8Array(n))
+        const stack = mod.stackSave()
+        const r1Pos = r1._sallocAndConvert()
+        const r2Pos = r2._sallocAndConvert()
+        const rPos = mod.stackAlloc(n)
+        mod._mclBnFr_add(rPos, r1Pos, r2Pos)
+        r._convertFr(rPos)
+        mod.stackRestore(stack)
+/*
         const r1Pos = r1._allocAndConvert()
         const r2Pos = r2._allocAndConvert()
         const rPos = _malloc(n)
         mod._mclBnFr_add(rPos, r1Pos, r2Pos)
-        r._convertAndFree(rPos)
+        r._convertFrAndFree(rPos)
         _free(r2Pos)
         _free(r1Pos)
+*/
         return r
       }
       getStr () {
@@ -705,10 +740,7 @@ const setupFactory = (createModule, getRandomValues) => {
       constructor () {
         this.p = mod._shePrecomputedPublicKeyCreate()
       }
-      /*
-        call destroy if PrecomputedPublicKey is not necessary
-        to avoid memory leak
-      */
+      // call destroy to avoid memory leak if PrecomputedPublicKey is not necessary
       destroy () {
         if (this.p == null) return
         mod._shePrecomputedPublicKeyDestroy(this.p)
@@ -1273,6 +1305,13 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextGT.prototype.isPrototypeOf(c)) {
           throw ('verify:bad c')
         }
+        const stack = mod.stackSave()
+        const auxPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
+        const r = mod._sheVerifyZkpDecGT(auxPos, cPos, m, zkpPos)
+        mod.stackRestore(stack)
+/*
         const auxPos = this._allocAndCopy()
         const cPos = c._allocAndCopy()
         const zkpPos = zkp._allocAndCopy()
@@ -1280,6 +1319,7 @@ const setupFactory = (createModule, getRandomValues) => {
         _free(zkpPos)
         _free(cPos)
         _free(auxPos)
+*/
         return r === 1
       }
     }
@@ -1329,11 +1369,19 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.neg:not supported')
       }
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._salloc()
+      func(yPos, xPos)
+      y._save(yPos)
+      mod.stackRestore(stack)
+/*
       const xPos = x._allocAndCopy()
       const yPos = y._alloc()
       func(yPos, xPos)
       y._saveAndFree(yPos)
       _free(xPos)
+*/
       return y
     }
     // return x + y
@@ -1390,11 +1438,19 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.mulInt:not supported')
       }
+      const stack = mod.stackSave()
+      const zPos = z._salloc()
+      const xPos = x._sallocAndCopy()
+      func(zPos, xPos, y)
+      z._save(zPos)
+      mod.stackRestore(stack)
+/*
       const zPos = z._alloc()
       const xPos = x._allocAndCopy()
       func(zPos, xPos, y)
       _free(xPos)
       z._saveAndFree(zPos)
+*/
       return z
     }
     // return (G1)x * (G2)y
@@ -1406,11 +1462,19 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     exports.finalExpGT = x => {
       const y = new exports.CipherTextGT()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._salloc()
+      mod._sheFinalExpGT(yPos, xPos)
+      y._save(yPos)
+      mod.stackRestore(stack)
+/*
       const xPos = x._allocAndCopy()
       const yPos = y._alloc()
       mod._sheFinalExpGT(yPos, xPos)
       y._saveAndFree(yPos)
       _free(xPos)
+*/
       return y
     }
     exports.loadTableForG1DLP = (a) => {
