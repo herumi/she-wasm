@@ -14,6 +14,7 @@ EncG1(x1) * EncG2(y1) + ... + EncG1(xn) * EncG2(yn) = EncGT(x1 * y1 + ... + xn *
 see [mcl](https://github.com/herumi/mcl)
 
 # News
+- 2023/Sep/06 The performance of enc/dec is a little improved.
 - 2023/Aug/17 The performance of dec is a little improved.
 - 2022/Jul/20 v1.0.0
 - 2020/Dec/27 change file layout

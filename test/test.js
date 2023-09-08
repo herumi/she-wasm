@@ -31,6 +31,7 @@ const curveTest = (curveType, name) => {
           zkpEqTest()
         }
         benchmark(g1only)
+        she._showDebug()
       } catch (e) {
         console.error('TEST FAIL')
         console.error(e)
