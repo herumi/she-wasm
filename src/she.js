@@ -40,6 +40,8 @@ const setupFactory = (createModule, getRandomValues) => {
     const SHE_AUX_SIZE = MCLBN_GT_SIZE * 4
 
     mod.g_his = []
+    mod.g_ptr = {}
+    mod.g_total = 0
     /*
       she libray always uses (malloc,free) in nested pairs.
     */
@@ -50,6 +52,8 @@ const setupFactory = (createModule, getRandomValues) => {
       mod.HEAP8[p+size+2] = 0x56
       mod.HEAP8[p+size+3] = 0x78
       mod.g_his.push([p, size])
+      mod.g_ptr[p] = size
+      mod.g_total += size
       return p
     }
     const _freeDebug = pos => {
@@ -64,11 +68,25 @@ const setupFactory = (createModule, getRandomValues) => {
         console.log(`ERR=${p} v=${v.toString(16)}`)
       }
       mod._free(pos)
+      const s = mod.g_ptr[pos]
+      if (s == 0) {
+        console.log(`ERR ${pos}`)
+      } else {
+        delete mod.g_ptr[pos]
+        mod.g_total -= s
+      }
     }
 //    const _malloc = _mallocDebug
 //    const _free = _freeDebug
     const _malloc = mod._malloc
     const _free = mod._free
+    exports._showDebug = () => {
+      if (_malloc === _mallocDebug) {
+        console.log('malloc DEBUG mode')
+        console.log(`  show total=${mod.g_total}`)
+        console.log(`  g_ptr=${JSON.stringify(mod.g_ptr,null,'\t')}`)
+      }
+    }
 
     const ptrToAsciiStr = (pos, n) => {
       let s = ''
@@ -127,10 +145,11 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const _wrapDeserialize = func => {
       return (x, buf) => {
-        const pos = _malloc(buf.length)
+        const stack = mod.stackSave()
+        const pos = mod.stackAlloc(buf.length)
         mod.HEAP8.set(buf, pos)
         const r = func(x, pos, buf.length)
-        _free(pos)
+        mod.stackRestore(stack)
         if (r === 0 || r !== buf.length) throw new Error('err _wrapDeserialize', buf)
       }
     }
@@ -139,73 +158,82 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     const wrap_dec = func => {
       return function (sec, c) {
-        const pos = _malloc(8)
+        const stack = mod.stackSave()
+        const pos = mod.stackAlloc(8)
         const r = func(pos, sec, c)
         const v = mod.HEAP32[pos / 4]
-        _free(pos)
+        mod.stackRestore(stack)
         if (r) throw ('sheDec')
         return v
       }
     }
     const callEnc = (func, cstr, pub, m) => {
       const c = new cstr()
-      const cPos = c._alloc()
-      const pubPos = pub._allocAndCopy()
+      const stack = mod.stackSave()
+      const cPos = c._salloc()
+      const pubPos = pub._sallocAndCopy()
       func(cPos, pubPos, m)
-      _free(pubPos)
-      c._saveAndFree(cPos)
+      c._save(cPos)
+      mod.stackRestore(stack)
       return c
     }
     const callPPKEncWithZkpBin = (func, cstr, pubPos, m) => {
       const c = new cstr()
-      const cPos = c._alloc()
       const zkp = new exports.ZkpBin()
-      const zkpPos = zkp._alloc()
+      const stack = mod.stackSave()
+      const cPos = c._salloc()
+      const zkpPos = zkp._salloc()
       const r = func(cPos, zkpPos, pubPos, m)
-      zkp._saveAndFree(zkpPos)
-      c._saveAndFree(cPos)
+      zkp._save(zkpPos)
+      c._save(cPos)
+      mod.stackRestore(stack)
       if (r) throw ('encWithZkpBin:bad m:' + m)
       return [c, zkp]
     }
     const callEncWithZkpBin = (func, cstr, pub, m) => {
-      const pubPos = pub._allocAndCopy()
+      const stack = mod.stackSave()
+      const pubPos = pub._sallocAndCopy()
       const r = callPPKEncWithZkpBin(func, cstr, pubPos, m)
-      _free(pubPos)
+      mod.stackRestore(stack)
       return r
     }
     const callPPKEncWithZkpSet = (func, cstr, pubPos, m, mVec) => {
       const mSize = mVec.length
       const c = new cstr()
-      const cPos = c._alloc()
       const zkp = new exports.ZkpSet(mSize)
-      const zkpPos = zkp._alloc()
       const tm = new exports.IntVec(mVec)
-      const mVecPos = tm._allocAndCopy()
+
+      const stack = mod.stackSave()
+      const cPos = c._salloc()
+      const zkpPos = zkp._salloc()
+      const mVecPos = tm._sallocAndCopy()
       const r = func(cPos, zkpPos, pubPos, m, mVecPos, mSize)
-      _free(mVecPos)
-      zkp._saveAndFree(zkpPos)
-      c._saveAndFree(cPos)
+      zkp._save(zkpPos)
+      c._save(cPos)
+      mod.stackRestore(stack)
       if (r) throw ('encWithZkpBin:bad m:' + m)
       return [c, zkp]
     }
     const callPPKEnc = (func, cstr, ppub, m) => {
       const c = new cstr()
-      const cPos = c._alloc()
+      const stack = mod.stackSave()
+      const cPos = c._salloc()
       const r = func(cPos, ppub, m)
-      c._saveAndFree(cPos)
+      c._save(cPos)
+      mod.stackRestore(stack)
       if (r) throw ('callPPKEnc:' + m)
       return c
     }
     // return func(x, y)
     const callAddSub = (func, cstr, x, y) => {
       const z = new cstr()
-      const xPos = x._allocAndCopy()
-      const yPos = y._allocAndCopy()
-      const zPos = z._alloc()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._sallocAndCopy()
+      const zPos = z._salloc()
       func(zPos, xPos, yPos)
-      z._saveAndFree(zPos)
-      _free(yPos)
-      _free(xPos)
+      z._save(zPos)
+      mod.stackRestore(stack)
       return z
     }
     // return func((G1)x, (G2)y)
@@ -213,22 +241,22 @@ const setupFactory = (createModule, getRandomValues) => {
       if (!exports.CipherTextG1.prototype.isPrototypeOf(x) ||
         !exports.CipherTextG2.prototype.isPrototypeOf(y)) throw ('exports.mul:bad type')
       const z = new exports.CipherTextGT()
-      const xPos = x._allocAndCopy()
-      const yPos = y._allocAndCopy()
-      const zPos = z._alloc()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._sallocAndCopy()
+      const zPos = z._salloc()
       func(zPos, xPos, yPos)
-      z._saveAndFree(zPos)
-      _free(yPos)
-      _free(xPos)
+      z._save(zPos)
+      mod.stackRestore(stack)
       return z
     }
     // return func(x, p2)
     const callDec = (func, x, y) => {
-      const xPos = x._allocAndCopy()
-      const yPos = y._allocAndCopy()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._sallocAndCopy()
       const r = func(xPos, yPos)
-      _free(yPos)
-      _free(xPos)
+      mod.stackRestore(stack)
       return r
     }
     const callLoadTable = (func, a) => {
@@ -297,19 +325,19 @@ const setupFactory = (createModule, getRandomValues) => {
         this.a_ = []
       }
       // alloc and convert byte array to Fr in the same way as setByCSPRNG()
-      _allocAndConvert () {
-        const n = this.a_[0].length
-        const pos = _malloc(n)
-        mod.HEAP8.set(this.a_[0], pos)
-        mod._mclBnFr_setLittleEndian(pos, pos, n)
-        return pos
-      }
-      // convert Fr to byte array and free
-      _convertAndFree (pos) {
+      // convert Fr to byte array
+      _convertFr (pos) {
         const n = this.a_[0].length
         mod._mclBnFr_serialize(pos, n, pos)
         this.a_[0].set(mod.HEAP8.subarray(pos, pos + n))
-        _free(pos)
+      }
+      // stack alloc and convert byte array to Fr in the same way as setByCSPRNG()
+      _sallocAndConvert () {
+        const n = this.a_[0].length
+        const pos = mod.stackAlloc(n)
+        mod.HEAP8.set(this.a_[0], pos)
+        mod._mclBnFr_setLittleEndian(pos, pos, n)
+        return pos
       }
       // shallow copy n elements of this
       copy (n = 1) {
@@ -334,13 +362,13 @@ const setupFactory = (createModule, getRandomValues) => {
         }
         const r = new exports.RandHistory()
         r.a_.push(new Uint8Array(n))
-        const r1Pos = r1._allocAndConvert()
-        const r2Pos = r2._allocAndConvert()
-        const rPos = _malloc(n)
+        const stack = mod.stackSave()
+        const r1Pos = r1._sallocAndConvert()
+        const r2Pos = r2._sallocAndConvert()
+        const rPos = mod.stackAlloc(n)
         mod._mclBnFr_add(rPos, r1Pos, r2Pos)
-        r._convertAndFree(rPos)
-        _free(r2Pos)
-        _free(r1Pos)
+        r._convertFr(rPos)
+        mod.stackRestore(stack)
         return r
       }
       getStr () {
@@ -411,6 +439,16 @@ const setupFactory = (createModule, getRandomValues) => {
         mod.HEAP32.set(this.a_, pos / 4)
         return pos
       }
+      // stack alloc new array
+      _salloc () {
+        return mod.stackAlloc(this.a_.length * 4)
+      }
+      // stack alloc and copy a_ to mod.HEAP32[pos / 4]
+      _sallocAndCopy () {
+        const pos = this._salloc()
+        mod.HEAP32.set(this.a_, pos / 4)
+        return pos
+      }
       // save pos to a_
       _save (pos) {
         this.a_.set(mod.HEAP32.subarray(pos / 4, pos / 4 + this.a_.length))
@@ -422,25 +460,20 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       // set parameter (p1, p2 may be undefined)
       _setter (func, p1, p2) {
-        const pos = this._alloc()
+        const stack = mod.stackSave()
+        const pos = this._salloc()
         const r = func(pos, p1, p2)
-        this._saveAndFree(pos)
+        this._save(pos)
+        mod.stackRestore(stack)
         if (r) throw new Error('_setter err')
       }
       // getter (p1, p2 may be undefined)
       _getter (func, p1, p2) {
-        const pos = this._allocAndCopy()
+        const stack = mod.stackSave()
+        const pos = this._sallocAndCopy()
         const s = func(pos, p1, p2)
-        _free(pos)
+        mod.stackRestore(stack)
         return s
-      }
-      _isEqual (func, rhs) {
-        const xPos = this._allocAndCopy()
-        const yPos = rhs._allocAndCopy()
-        const r = func(xPos, yPos)
-        _free(yPos)
-        _free(xPos)
-        return r === 1
       }
     }
     exports.SecretKey = class extends Common {
@@ -454,17 +487,20 @@ const setupFactory = (createModule, getRandomValues) => {
         return this._getter(mod.sheSecretKeySerialize)
       }
       setByCSPRNG () {
-        const pos = this._alloc()
+        const stack = mod.stackSave()
+        const pos = this._salloc()
         mod._sheSecretKeySetByCSPRNG(pos)
-        this._saveAndFree(pos)
+        this._save(pos)
+        mod.stackRestore(stack)
       }
       getPublicKey () {
         const pub = new exports.PublicKey()
-        const secPos = this._allocAndCopy()
-        const pubPos = pub._alloc()
+        const stack = mod.stackSave()
+        const secPos = this._sallocAndCopy()
+        const pubPos = pub._salloc()
         mod._sheGetPublicKey(pubPos, secPos)
-        pub._saveAndFree(pubPos)
-        _free(secPos)
+        pub._save(pubPos)
+        mod.stackRestore(stack)
         return pub
       }
       dec (c) {
@@ -485,18 +521,16 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('decWithZkpDec:not supported')
         }
         const zkp = new exports.ZkpDec()
-        const mPos = _malloc(8)
-        const zkpPos = zkp._alloc()
-        const secPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
-        const pubPos = pub._allocAndCopy()
+        const stack = mod.stackSave()
+        const mPos = mod.stackAlloc(8)
+        const zkpPos = zkp._salloc()
+        const secPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const pubPos = pub._sallocAndCopy()
         const r = mod._sheDecWithZkpDecG1(mPos, zkpPos, secPos, cPos, pubPos)
-        _free(pubPos)
-        _free(cPos)
-        _free(secPos)
-        zkp._saveAndFree(zkpPos)
+        zkp._save(zkpPos)
         const m = mod.HEAP32[mPos / 4]
-        _free(mPos)
+        mod.stackRestore(stack)
         if (r) throw ('_sheDecWithZkpDecG1')
         return [m, zkp]
       }
@@ -505,18 +539,16 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('decWithZkpDecGT:bad c')
         }
         const zkp = new exports.ZkpDecGT()
-        const mPos = _malloc(8)
-        const zkpPos = zkp._alloc()
-        const secPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
-        const auxPos = aux._allocAndCopy()
+        const stack = mod.stackSave()
+        const mPos = mod.stackAlloc(8)
+        const zkpPos = zkp._salloc()
+        const secPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const auxPos = aux._sallocAndCopy()
         const r = mod._sheDecWithZkpDecGT(mPos, zkpPos, secPos, cPos, auxPos)
-        _free(auxPos)
-        _free(cPos)
-        _free(secPos)
-        zkp._saveAndFree(zkpPos)
+        zkp._save(zkpPos)
         const m = mod.HEAP32[mPos / 4]
-        _free(mPos)
+        mod.stackRestore(stack)
         if (r) throw ('_sheDecWithZkpDecGT')
         return [m, zkp]
       }
@@ -542,11 +574,11 @@ const setupFactory = (createModule, getRandomValues) => {
         } else {
           throw ('exports.SecretKey.isZero:not supported')
         }
-        const secPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
+        const stack = mod.stackSave()
+        const secPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
         const r = isZero(secPos, cPos)
-        _free(cPos)
-        _free(secPos)
+        mod.stackRestore(stack)
         return r
       }
     }
@@ -560,10 +592,7 @@ const setupFactory = (createModule, getRandomValues) => {
       constructor () {
         this.p = mod._shePrecomputedPublicKeyCreate()
       }
-      /*
-        call destroy if PrecomputedPublicKey is not necessary
-        to avoid memory leak
-      */
+      // call destroy to avoid memory leak if PrecomputedPublicKey is not necessary
       destroy () {
         if (this.p == null) return
         mod._shePrecomputedPublicKeyDestroy(this.p)
@@ -573,9 +602,10 @@ const setupFactory = (createModule, getRandomValues) => {
         initialize PrecomputedPublicKey by PublicKey pub
       */
       init (pub) {
-        const pubPos = pub._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = pub._sallocAndCopy()
         mod._shePrecomputedPublicKeyInit(this.p, pubPos)
-        _free(pubPos)
+        mod.stackRestore(stack)
       }
       // return m (0 or 1) if c is generated ciphertext of m by randHistory
       // otherwise throw exception
@@ -631,11 +661,11 @@ const setupFactory = (createModule, getRandomValues) => {
         if (verify === null) {
           throw ('exports.verifyZkpBin:bad type')
         }
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = verify(this.p, cPos, zkpPos)
-        _free(zkpPos)
-        _free(cPos)
+        mod.stackRestore(stack)
         return r === 1
       }
       verifyZkpSet (c, zkp, mVec) {
@@ -647,14 +677,13 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('exports.verify:bad type')
         }
         const mSize = mVec.length
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
         const tm = new exports.IntVec(mVec)
-        const mVecPos = tm._allocAndCopy()
+        const stack = mod.stackSave()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
+        const mVecPos = tm._sallocAndCopy()
         const r = verify(this.p, cPos, zkpPos, mVecPos, mSize)
-        _free(mVecPos)
-        _free(zkpPos)
-        _free(cPos)
+        mod.stackRestore(stack)
         return r === 1
       }
     }
@@ -708,9 +737,10 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       encWithZkpSetG1 (m, mVec, rh = undefined) {
         if (rh) rh._set()
-        const pubPos = this._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
         const r = callPPKEncWithZkpSet(mod._sheEncWithZkpSetG1, exports.CipherTextG1, pubPos, m, mVec)
-        _free(pubPos)
+        mod.stackRestore(stack)
         if (rh) rh._reset()
         return r
       }
@@ -718,19 +748,19 @@ const setupFactory = (createModule, getRandomValues) => {
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpBinEq (m, rh = undefined) {
         if (rh) rh._set()
-        const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
-        const c1Pos = c1._alloc()
         const c2 = new exports.CipherTextG2()
-        const c2Pos = c2._alloc()
-
         const zkp = new exports.ZkpBinEq()
-        const zkpPos = zkp._alloc()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const c1Pos = c1._salloc()
+        const c2Pos = c2._salloc()
+        const zkpPos = zkp._salloc()
         const r = mod._sheEncWithZkpBinEq(c1Pos, c2Pos, zkpPos, pubPos, m)
-        zkp._saveAndFree(zkpPos)
-        c2._saveAndFree(c2Pos)
-        c1._saveAndFree(c1Pos)
-        _free(pubPos)
+        zkp._save(zkpPos)
+        c2._save(c2Pos)
+        c1._save(c1Pos)
+        mod.stackRestore(stack)
         if (rh) rh._reset()
         if (r) throw ('encWithZkpBinEq:bad m:' + m)
         return [c1, c2, zkp]
@@ -740,33 +770,31 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c1) || !exports.CipherTextG2.prototype.isPrototypeOf(c2)) {
           throw ('exports.verify:bad type')
         }
-        const pubPos = this._allocAndCopy()
-        const c1Pos = c1._allocAndCopy()
-        const c2Pos = c2._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const c1Pos = c1._sallocAndCopy()
+        const c2Pos = c2._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = mod._sheVerifyZkpBinEq(pubPos, c1Pos, c2Pos, zkpPos)
-        _free(zkpPos)
-        _free(c2Pos)
-        _free(c1Pos)
-        _free(pubPos)
+        mod.stackRestore(stack)
         return r === 1
       }
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpEq (m, rh = undefined) {
         if (rh) rh._set()
-        const pubPos = this._allocAndCopy()
         const c1 = new exports.CipherTextG1()
-        const c1Pos = c1._alloc()
         const c2 = new exports.CipherTextG2()
-        const c2Pos = c2._alloc()
-
         const zkp = new exports.ZkpEq()
-        const zkpPos = zkp._alloc()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const c1Pos = c1._salloc()
+        const c2Pos = c2._salloc()
+        const zkpPos = zkp._salloc()
         const r = mod._sheEncWithZkpEq(c1Pos, c2Pos, zkpPos, pubPos, m)
-        zkp._saveAndFree(zkpPos)
-        c2._saveAndFree(c2Pos)
-        c1._saveAndFree(c1Pos)
-        _free(pubPos)
+        zkp._save(zkpPos)
+        c2._save(c2Pos)
+        c1._save(c1Pos)
+        mod.stackRestore(stack)
         if (rh) rh._reset()
         if (r) throw ('encWithZkpEq:bad m:' + m)
         return [c1, c2, zkp]
@@ -776,15 +804,13 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c1) || !exports.CipherTextG2.prototype.isPrototypeOf(c2)) {
           throw ('exports.verify:bad type')
         }
-        const pubPos = this._allocAndCopy()
-        const c1Pos = c1._allocAndCopy()
-        const c2Pos = c2._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const c1Pos = c1._sallocAndCopy()
+        const c2Pos = c2._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = mod._sheVerifyZkpEq(pubPos, c1Pos, c2Pos, zkpPos)
-        _free(zkpPos)
-        _free(c2Pos)
-        _free(c1Pos)
-        _free(pubPos)
+        mod.stackRestore(stack)
         return r === 1
       }
       verify (c, zkp, m) {
@@ -800,13 +826,12 @@ const setupFactory = (createModule, getRandomValues) => {
         } else {
           throw ('exports.verify:bad type')
         }
-        const pubPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = func(pubPos, cPos, zkpPos)
-        _free(zkpPos)
-        _free(cPos)
-        _free(pubPos)
+        mod.stackRestore(stack)
         return r == 1
       }
       verifyZkpSet (c, zkp, mVec) {
@@ -817,30 +842,27 @@ const setupFactory = (createModule, getRandomValues) => {
         if (verify === null) {
           throw ('exports.verify:bad type')
         }
-        const pubPos = this._allocAndCopy()
         const mSize = mVec.length
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
         const tm = new exports.IntVec(mVec)
-        const mVecPos = tm._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
+        const mVecPos = tm._sallocAndCopy()
         const r = verify(pubPos, cPos, zkpPos, mVecPos, mSize)
-        _free(mVecPos)
-        _free(zkpPos)
-        _free(cPos)
-        _free(pubPos)
+        mod.stackRestore(stack)
         return r === 1
       }
       verifyZkpDec (c, zkp, m) {
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           throw ('verifyZkpDec:bad type')
         }
-        const pubPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = mod._sheVerifyZkpDecG1(pubPos, cPos, m, zkpPos)
-        _free(zkpPos)
-        _free(cPos)
-        _free(pubPos)
+        mod.stackRestore(stack)
         return r === 1
       }
       reRand (c) {
@@ -854,11 +876,12 @@ const setupFactory = (createModule, getRandomValues) => {
         } else {
           throw ('exports.PublicKey.reRand:not supported')
         }
-        const cPos = c._allocAndCopy()
-        const pubPos = this._allocAndCopy()
+        const stack = mod.stackSave()
+        const cPos = c._sallocAndCopy()
+        const pubPos = this._sallocAndCopy()
         const r = func(cPos, pubPos)
-        _free(pubPos)
-        c._saveAndFree(cPos)
+        c._save(cPos)
+        mod.stackRestore(stack)
         if (r) throw ('reRand err')
       }
       // convert to CipherTextGT
@@ -872,23 +895,24 @@ const setupFactory = (createModule, getRandomValues) => {
           throw ('exports.PublicKey.convert:not supported')
         }
         const ct = new exports.CipherTextGT()
-        const ctPos = ct._alloc()
-        const pubPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
+        const stack = mod.stackSave()
+        const ctPos = ct._salloc()
+        const pubPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
         const r = func(ctPos, pubPos, cPos)
-        _free(cPos)
-        _free(pubPos)
-        ct._saveAndFree(ctPos)
+        ct._save(ctPos)
+        mod.stackRestore(stack)
         if (r) throw ('callConvert err')
         return ct
       }
       getAuxiliaryForZkpDecGT () {
         const aux = new exports.AuxiliaryForZkpDecGT()
-        const pubPos = this._allocAndCopy()
-        const auxPos = aux._alloc()
+        const stack = mod.stackSave()
+        const pubPos = this._sallocAndCopy()
+        const auxPos = aux._salloc()
         mod._sheGetAuxiliaryForZkpDecGT(auxPos, pubPos)
-        aux._saveAndFree(auxPos)
-        _free(pubPos)
+        aux._save(auxPos)
+        mod.stackRestore(stack)
         return aux
       }
     }
@@ -1013,13 +1037,12 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextGT.prototype.isPrototypeOf(c)) {
           throw ('verify:bad c')
         }
-        const auxPos = this._allocAndCopy()
-        const cPos = c._allocAndCopy()
-        const zkpPos = zkp._allocAndCopy()
+        const stack = mod.stackSave()
+        const auxPos = this._sallocAndCopy()
+        const cPos = c._sallocAndCopy()
+        const zkpPos = zkp._sallocAndCopy()
         const r = mod._sheVerifyZkpDecGT(auxPos, cPos, m, zkpPos)
-        _free(zkpPos)
-        _free(cPos)
-        _free(auxPos)
+        mod.stackRestore(stack)
         return r === 1
       }
     }
@@ -1069,11 +1092,12 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.neg:not supported')
       }
-      const xPos = x._allocAndCopy()
-      const yPos = y._alloc()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._salloc()
       func(yPos, xPos)
-      y._saveAndFree(yPos)
-      _free(xPos)
+      y._save(yPos)
+      mod.stackRestore(stack)
       return y
     }
     // return x + y
@@ -1130,11 +1154,12 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.mulInt:not supported')
       }
-      const zPos = z._alloc()
-      const xPos = x._allocAndCopy()
+      const stack = mod.stackSave()
+      const zPos = z._salloc()
+      const xPos = x._sallocAndCopy()
       func(zPos, xPos, y)
-      _free(xPos)
-      z._saveAndFree(zPos)
+      z._save(zPos)
+      mod.stackRestore(stack)
       return z
     }
     // return (G1)x * (G2)y
@@ -1146,11 +1171,12 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     exports.finalExpGT = x => {
       const y = new exports.CipherTextGT()
-      const xPos = x._allocAndCopy()
-      const yPos = y._alloc()
+      const stack = mod.stackSave()
+      const xPos = x._sallocAndCopy()
+      const yPos = y._salloc()
       mod._sheFinalExpGT(yPos, xPos)
-      y._saveAndFree(yPos)
-      _free(xPos)
+      y._save(yPos)
+      mod.stackRestore(stack)
       return y
     }
     exports.loadTableForG1DLP = (a) => {
