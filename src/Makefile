@@ -27,9 +27,10 @@ EMCC_OPT+=-fexceptions
 EMCC_OPT+=-s TOTAL_MEMORY=134217728
 EMCC_OPT+=-s STACK_SIZE=1MB
 EMCC_OPT+=-sEXPORTED_FUNCTIONS=_malloc,_free,stackAlloc,stackSave,stackRestore
+EMCC_OPT+=-flto
 
 she_c.js:
-	emcc -o $@ $(MCL_DIR)/src/fp.cpp $(MCL_DIR)/src/she_c384_256.cpp $(EMCC_OPT)
+	emcc -o $@ $(MCL_DIR)/src/fp.cpp $(MCL_DIR)/src/she_c384_256.cpp ./dep.cpp $(EMCC_OPT)
 	# disable require fs, path
 	perl -i -pe 's@(.* = require\(.*)@//\1@' $@
 
