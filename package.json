@@ -1,8 +1,9 @@
 {
   "name": "she-wasm",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Two-level homomorphic encryption for Node.js by WebAssembly",
   "main": "src/index.js",
+  "packageManager": "pnpm@10.29.1",
   "scripts": {
     "test": "node test/test.js"
   },

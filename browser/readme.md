@@ -3,8 +3,8 @@
 How to build `browser/she.js`.
 ```
 cd browser
-npm install webpack webpack-cli --save-dev
-npx webpack
+pnpm add -D webpack webpack-cli
+pnpm webpack
 python3 -m http.server
 ```
 

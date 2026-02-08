@@ -29,7 +29,7 @@ see [mcl](https://github.com/herumi/mcl)
 # for Node.js
 
 ```
-node test
+pnpm test
 ```
 
 # How to use
@@ -52,6 +52,7 @@ K. Shimizu, and T. Teruya. ASIACCS 2018
 Install [Emscripten](https://emscripten.org/).
 
 ```
+pnpm install
 git submodule update --init --resurcive
 cd src
 make
