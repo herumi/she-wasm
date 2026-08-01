@@ -1207,12 +1207,9 @@ const setupFactory = (createModule, getRandomValues) => {
     if (r2) throw (`setRange g1only${exports.g1only} err=${r2}`)
     mod._sheSetTryNum(tryNum)
   } // setup()
-  const _cryptoGetRandomValues = function(p, n) {
-    const a = new Uint8Array(n)
+  // glue.js calls this with a Uint8Array to be filled
+  const _cryptoGetRandomValues = function(a) {
     exports.getRandomValues(a)
-    for (let i = 0; i < n; i++) {
-      exports.mod.HEAP8[p + i] = a[i]
-    }
   }
   exports.getRandFunc = () => {
     return exports.getRandomValues
@@ -1232,6 +1229,7 @@ const setupFactory = (createModule, getRandomValues) => {
     exports.getRandomValues = getRandomValues
     exports.mod = await createModule({
       cryptoGetRandomValues: _cryptoGetRandomValues,
+      prefix: 'she',
     })
     setup(exports, curveType, range, tryNum)
   }
