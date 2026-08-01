@@ -1,7 +1,7 @@
 MCL_DIR?=./mcl
 OBJ_DIR?=./obj
 WASM_DIR=$(MCL_DIR)/src/wasm
-#LLVM_VER?=-18
+LLVM_VER?=-18
 
 CC=clang$(LLVM_VER)
 CXX=clang++$(LLVM_VER)
