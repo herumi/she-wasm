@@ -54,7 +54,7 @@ Install Clang and lld.
 ```
 sudo apt install clang lld
 pnpm install
-git submodule update --init --resurcive
+git submodule update --init --recursive
 cd src
 make
 ```
