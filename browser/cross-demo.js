@@ -46,7 +46,8 @@ function handleClick (ev) {
 
   for (let i = 0; i < buttonEls.length; i++) {
     const btn = buttonEls[i]
-    if (btn == ev.target) {
+    // the buttons contain en/ja spans, so ev.target may be a span; use currentTarget
+    if (btn == ev.currentTarget) {
       btn.classList.add('advanced-tab--active')
       btn.setAttribute('aria-expanded', 'true')
 

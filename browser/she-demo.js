@@ -17,25 +17,14 @@ function newRow (cells) {
 let sec = null
 let pub = null
 
-function setTableHeader(obj, header) {
-  obj.innerHTML = ''
-  const t = document.createElement('tr')
-  t.id = 'header'
-  for (let i = 0; i < header.length; i++) {
-    const th = document.createElement('th')
-    th.textContent = header[i]
-    t.appendChild(th)
-  }
-  obj.appendChild(t)
-}
-
 function clearTable () {
-  setTableHeader(document.getElementById('client_table'), ['x', 'y', 'EncG1(x)', 'EncG2(y)'])
-  setTableHeader(document.getElementById('server_table'), ['EncG1(x)', 'EncG2(y)', 'EncGT(x * y)'])
+  document.getElementById('client_table').innerHTML = ''
+  document.getElementById('server_table').innerHTML = ''
 }
 
 function initShe (curveType) {
   const initSecPub = () => {
+    clearTable()
     sec = new she.SecretKey()
     sec.setByCSPRNG()
     sec.dump('sec=')
@@ -46,10 +35,9 @@ function initShe (curveType) {
     console.log(`curveType=${curveType}`)
     setText('status', `curveType=${curveType} status ok`)
   }
-  clearTable()
-  setText('status', `curveType=${curveType} status initializing...`)
   she.init(curveType).then(() => {
-    if (curveType == she.BN254) {
+    setText('status', `curveType=${curveType} status initializing...`)
+    if (curveType === she.BN254) {
       fetch('https://herumi.github.io/she-dlp-table/she-dlp-0-20-gt.bin')
         .then(res => res.arrayBuffer())
         .then(buffer => {
@@ -65,6 +53,8 @@ function initShe (curveType) {
 }
 
 let prevSelectedCurve = 0
+// scripts are loaded in <head>, so wait for the DOM before touching it
+window.addEventListener('DOMContentLoaded', () => { initShe(0) })
 
 function onChangeSelectCurve () {
   const obj = document.selectCurve.curveType
@@ -75,14 +65,61 @@ function onChangeSelectCurve () {
   initShe(curveType)
 }
 
-function append () {
-  let v = getValue('append')
-  let vs = v.split(',')
-  let x = parseInt(vs[0])
-  let y = parseInt(vs[1])
+function bench (label, count, func) {
+  const start = Date.now()
+  for (let i = 0; i < count; i++) {
+    func()
+  }
+  const end = Date.now()
+  const t = (end - start) / count
+  setText(label, t)
+}
+
+function benchAll () {
+  const C1 = 50
+  const C2 = 10
+//    const L = 16 // large value
+//  const L = 8 // small value
+  const m = ((1 << 30) - 1234) * 1
+  bench('EncG1T', C1, () => { pub.encG1(m) })
+  bench('EncG2T', C1, () => { pub.encG2(m) })
+  bench('EncGTT', C2, () => { pub.encGT(m) })
+  const c11 = pub.encG1(m)
+  const c12 = pub.encG1(m)
+  const c21 = pub.encG2(m)
+  const c22 = pub.encG2(m)
+  const ct1 = pub.encGT(m)
+  const ct2 = pub.encGT(m)
+  bench('AddG1T', C1 * 10, () => { she.add(c11, c12) })
+  bench('AddG2T', C1 * 10, () => { she.add(c21, c22) })
+  bench('AddGTT', C1 * 10, () => { she.add(ct1, ct2) })
+
+  bench('MulT', C2, () => { she.mul(c11, c21) })
+
+//  bench('DecG1T', C2, () => { sec.dec(c11) })
+//  bench('DecG2T', C2, () => { sec.dec(c21) })
+  bench('DecGTT', C2, () => { sec.dec(ct1) })
+  const cts = pub.encGT(1234)
+  bench('DecGTsT', C2, () => { sec.dec(cts) })
+
+  bench('DecG1ViaGTT', C2, () => { sec.decViaGT(c11) })
+  bench('DecG2ViaGTT', C2, () => { sec.decViaGT(c21) })
+
+//    bench('ReRandG1T', C2, () => { ppub.reRand(c11) })
+ //   bench('ReRandG2T', C2, () => { ppub.reRand(c21) })
+  //  bench('ReRandGTT', C2, () => { ppub.reRand(ct1) })
+
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  bench('PPKencG1T', C1, () => { ppub.encG1(m) })
+  bench('PPKencG2T', C1, () => { ppub.encG2(m) })
+  bench('PPKencGTT', C1, () => { ppub.encGT(m) })
+}
+
+function appendXY (x, y) {
   console.log('x = ' + x + ', y = ' + y)
-  let c1 = pub.encG1(x)
-  let c2 = pub.encG2(y)
+  const c1 = pub.encG1(x)
+  const c2 = pub.encG2(y)
   document.getElementById('client_table').appendChild(newRow([
     newCell(x),
     newCell(y),
@@ -91,16 +128,32 @@ function append () {
   ]))
 }
 
+function append () {
+  const v = getValue('append')
+  const vs = v.split(',')
+  const x = parseInt(vs[0])
+  const y = parseInt(vs[1])
+  appendXY(x, y)
+}
+
+function appendRand () {
+  const tbl = [
+    [1, 2], [-2, 1], [4, 3], [5, -2], [6, 1]
+  ]
+  tbl.forEach(p => appendXY(p[0], p[1]))
+}
+
 function send () {
-  let ct1 = []
+  const ct1 = []
   document.querySelectorAll('.encG1x').forEach((e) => {
     ct1.push(e.textContent)
   })
-  let ct2 = []
+  const ct2 = []
   document.querySelectorAll('.encG2y').forEach((e) => {
     ct2.push(e.textContent)
   })
-  let obj = document.getElementById('server_table')
+  const obj = document.getElementById('server_table')
+  obj.innerHTML = ''
   for (let i = 0; i < ct1.length; i++) {
     obj.appendChild(newRow([
       newCell(ct1[i], 'encG1xS'),
@@ -113,9 +166,9 @@ function send () {
 function mul () {
   document.querySelectorAll('.encG1xS').forEach((e) => {
     const e2 = e.nextElementSibling
-    let c1 = she.deserializeHexStrToCipherTextG1(e.textContent)
-    let c2 = she.deserializeHexStrToCipherTextG2(e2.textContent)
-    let ct = she.mul(c1, c2)
+    const c1 = she.deserializeHexStrToCipherTextG1(e.textContent)
+    const c2 = she.deserializeHexStrToCipherTextG2(e2.textContent)
+    const ct = she.mul(c1, c2)
     e2.nextElementSibling.textContent = ct.serializeToHexStr()
   })
 }
@@ -123,10 +176,15 @@ function mul () {
 function sum () {
   let csum = pub.encGT(0)
   document.querySelectorAll('.encGTxyS').forEach((e) => {
-    let ct = she.deserializeHexStrToCipherTextGT(e.textContent)
+    const ct = she.deserializeHexStrToCipherTextGT(e.textContent)
     csum = she.add(csum, ct)
   })
   setText('encSumS', csum.serializeToHexStr())
+}
+
+function mulSum () {
+  mul()
+  sum()
 }
 
 function recv () {
@@ -134,8 +192,8 @@ function recv () {
 }
 
 function dec () {
-  let s = getText('encSumC')
-  let ct = she.deserializeHexStrToCipherTextGT(s)
-  let v = sec.dec(ct)
+  const s = getText('encSumC')
+  const ct = she.deserializeHexStrToCipherTextGT(s)
+  const v = sec.dec(ct)
   setText('ret', v)
 }

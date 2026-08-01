@@ -1,86 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-	<meta charset="UTF-8">
-	<title>Two-level Homomorphic Encryption demo</title>
-	<link rel="stylesheet" href="mobile.css">
-	<script src="she.js"></script>
-	<script src="she-demo-ja.js"></script>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0; url=she-demo.html?lang=ja">
+<title>moved</title>
 </head>
 <body>
-
-<h1>内積の秘匿計算デモ</h1>
-<h3>
-<form name="selectCurve">
-pairing parameter : <select name="curveType" onChange="onChangeSelectCurve()">
-<option value="0" selected>BN254</option>
-<option value="4">BN_SNARK1</option>
-<option value="5">BLS12_381</option>
-</select>
-ライブラリ：<span name="status">初期化中</span>
-</form>
-</h3>
-<button type="button" onclick="clearTable()">clear table</button>
-
-<h2>データ提供者</h2>
-<h3>秘密鍵：</h3><span name="sec" class="hex"></span>
-
-<table border=1 id="client_table" width="100%" summary="client">
-<tr id="client_header"><th>x<th>y<th class="hex">Enc(x)<th class="hex">Enc(y)</tr>
-</table>
-<input type="text" name="append" value="1,1">
-<button type="button" onclick="append()">"x,y"を追加する</button> または
-<button type="button" onclick="appendRand()">プリセットを追加する</button>
-<br>
-<button type="button" onclick="send()">暗号文をサーバに送信</button>
-
-<hr>
-
-<h2>代理秘匿計算サーバ</h2>
-<h3>公開鍵：</h3><span name="pub" class="hex"></span>
-
-<table border=1 id="server_table" width="100%" summary="server">
-</table>
-<button type="button" onclick="mulSum()">暗号文のまま各行の積を取りその値を集計する</button><br>
-<h3>集計結果：</h3><span name="encSumS" class="hex">0</span>
-<br>
-<button type="button" onclick="recv()">クライアントに送信する</button>
-
-
-<hr>
-<h2>復号クライアント</h2>
-
-<h3>暗号文の計算結果：</h3><span name="encSumC" class="hex">0</span>
-<br>
-<button type="button" onclick="dec()">復号する</button><br>
-<h3>集計結果：</h3><span name="ret">0</span>
-
-<hr>
-<h2>ベンチマーク</h2>
-<button type="button" onclick="benchAll()">benchAll</button><br>
-
-<table border=1 id="benchAll" width="100%" summary="benchAll">
-<tr><th>op<th>msec
-<tr><th>EncG1<th><span name="EncG1T">0</span>
-<tr><th>EncG2<th><span name="EncG2T">0</span>
-<tr><th>EncGT<th><span name="EncGTT">0</span>
-<tr><th>PPKencG1<th><span name="PPKencG1T">0</span>
-<tr><th>PPKencG2<th><span name="PPKencG2T">0</span>
-<tr><th>PPKencGT<th><span name="PPKencGTT">0</span>
-<tr><th>AddG1<th><span name="AddG1T">0</span>
-<tr><th>AddG2<th><span name="AddG2T">0</span>
-<tr><th>AddGT<th><span name="AddGTT">0</span>
-<tr><th>ReRandG1<th><span name="ReRandG1T">0</span>
-<tr><th>ReRandG2<th><span name="ReRandG2T">0</span>
-<tr><th>ReRandGT<th><span name="ReRandGTT">0</span>
-<tr><th>Mul<th><span name="MulT">0</span>
-<tr><th>DecG1<th><span name="DecG1T">0</span>
-<tr><th>DecG2<th><span name="DecG2T">0</span>
-<tr><th>DecGT<th><span name="DecGTT">0</span>
-<tr><th>DecGT(small)<th><span name="DecGTsT">0</span>
-<tr><th>DecG1 via GT<th><span name="DecG1ViaGTT">0</span>
-<tr><th>DecG2 via GT<th><span name="DecG2ViaGTT">0</span>
-</table>
-
+<a href="she-demo.html?lang=ja">she-demo.html?lang=ja</a>
 </body>
 </html>

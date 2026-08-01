@@ -24,8 +24,7 @@ see [mcl](https://github.com/herumi/mcl)
 
 # Demo
 
-* [cross tabulation demo](https://herumi.github.io/she-wasm/browser/cross-demo.html)
-* [cross tabulation demo (Japanese)](https://herumi.github.io/she-wasm/browser/cross-demo-ja.html)
+* [cross tabulation demo](https://herumi.github.io/she-wasm/browser/cross-demo.html) (switch en/ja by the top-right button)
 
 # for Node.js
 

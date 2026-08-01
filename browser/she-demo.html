@@ -3,57 +3,98 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Two-level Homomorphic Encryption demo</title>
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="mobile.css">
+	<style>
+	html[data-lang="en"] .ja { display: none }
+	html[data-lang="ja"] .en { display: none }
+	#lang-toggle { position: fixed; top: 8px; right: 8px }
+	</style>
+	<script src="lang.js"></script>
 	<script src="she.js"></script>
 	<script src="she-demo.js"></script>
 </head>
 <body>
-<h1>Two-level Homomorphic Encryption demo</h1>
+<button id="lang-toggle" type="button" onclick="toggleLang()">en/ja</button>
+
+<h1><span class="en">Secure inner-product computation demo</span><span class="ja">内積の秘匿計算デモ</span></h1>
+<h3>
 <form name="selectCurve">
 pairing parameter : <select name="curveType" onChange="onChangeSelectCurve()">
 <option value="0" selected>BN254</option>
 <option value="4">BN_SNARK1</option>
 <option value="5">BLS12_381</option>
 </select>
-library status <span name="status">initializing...</span>
+<span class="en">library : </span><span class="ja">ライブラリ：</span><span name="status">initializing...</span>
 </form>
-<button type="button" onclick="clearTable()">clear table</button>
+</h3>
+<button type="button" onclick="clearTable()"><span class="en">clear table</span><span class="ja">テーブルクリア</span></button>
 
-<div id="left">
-<h2>Client</h2>
-secretKey : <div name="sec" class="hex"></div>
+<h2><span class="en">Data provider</span><span class="ja">データ提供者</span></h2>
+<h3><span class="en">secret key:</span><span class="ja">秘密鍵：</span></h3><span name="sec" class="hex"></span>
 
-<table border=1 id="client_table" width="100%" summary="client">
-<tr id="client_header"><th>x<th>y<th class="hex">EncG1(x)<th class="hex">EncG2(y)</tr>
+<table border=1 width="100%" summary="client">
+<thead>
+<tr id="client_header"><th>x<th>y<th class="hex">Enc(x)<th class="hex">Enc(y)</tr>
+</thead>
+<tbody id="client_table"></tbody>
 </table>
 <input type="text" name="append" value="1,1">
-<button type="button" onclick="append()">1. append "x,y" and encrypt them (multiple times)</button>
+<button type="button" onclick="append()"><span class="en">append "x,y"</span><span class="ja">"x,y"を追加する</span></button>
+<span class="en"> or </span><span class="ja"> または </span>
+<button type="button" onclick="appendRand()"><span class="en">append presets</span><span class="ja">プリセットを追加する</span></button>
 <br>
-<button type="button" onclick="send()">2. send to server</button>
-<div>received ciphertext</div>
-<div name="encSumC" class="hex">0</div>
-<button type="button" onclick="dec()">6. decode ciphertext(the value is in 32-bit integer)</button>
-<div name="ret">0</div>
+<button type="button" onclick="send()"><span class="en">send ciphertexts to the server</span><span class="ja">暗号文をサーバに送信</span></button>
 
-</div>
+<hr>
 
-<div id="middle">
-</div>
+<h2><span class="en">Computing server</span><span class="ja">代理秘匿計算サーバ</span></h2>
+<h3><span class="en">public key:</span><span class="ja">公開鍵：</span></h3><span name="pub" class="hex"></span>
 
-<div id="right">
-
-<h2>Server</h2>
-publicKey : <div name="pub" class="hex"></div>
-
-<table border=1 id="server_table" width="100%" summary="server">
+<table border=1 width="100%" summary="server">
+<thead>
+<tr id="server_header"><th class="hex">Enc(x)<th class="hex">Enc(y)<th class="hex">Enc(x * y)</tr>
+</thead>
+<tbody id="server_table"></tbody>
 </table>
-<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y) for each row</button><br>
-<button type="button" onclick="sum()">4. sum of all values in EncGT(x * y) column</button>
-<div>result</div>
-<div name="encSumS" class="hex">0</div>
-<button type="button" onclick="recv()">5. return to client</button>
+<button type="button" onclick="mulSum()"><span class="en">multiply each row and aggregate the products</span><span class="ja">暗号文のまま各行の積を取りその値を集計する</span></button><br>
+<h3><span class="en">aggregated result:</span><span class="ja">集計結果：</span></h3><span name="encSumS" class="hex">0</span>
+<br>
+<button type="button" onclick="recv()"><span class="en">send to the client</span><span class="ja">クライアントに送信する</span></button>
 
-</div>
+<hr>
+<h2><span class="en">Decryption client</span><span class="ja">復号クライアント</span></h2>
+
+<h3><span class="en">received result:</span><span class="ja">暗号文の計算結果：</span></h3><span name="encSumC" class="hex">0</span>
+<br>
+<button type="button" onclick="dec()"><span class="en">decrypt</span><span class="ja">復号する</span></button><br>
+<h3><span class="en">decrypted result:</span><span class="ja">集計結果：</span></h3><span name="ret">0</span>
+
+<hr>
+<h2><span class="en">Benchmark</span><span class="ja">ベンチマーク</span></h2>
+<button type="button" onclick="benchAll()">benchAll</button><br>
+
+<table border=1 id="benchAll" width="100%" summary="benchAll">
+<tr><th>op<th>msec
+<tr><th>EncG1<th><span name="EncG1T">0</span>
+<tr><th>EncG2<th><span name="EncG2T">0</span>
+<tr><th>EncGT<th><span name="EncGTT">0</span>
+<tr><th>PPKencG1<th><span name="PPKencG1T">0</span>
+<tr><th>PPKencG2<th><span name="PPKencG2T">0</span>
+<tr><th>PPKencGT<th><span name="PPKencGTT">0</span>
+<tr><th>AddG1<th><span name="AddG1T">0</span>
+<tr><th>AddG2<th><span name="AddG2T">0</span>
+<tr><th>AddGT<th><span name="AddGTT">0</span>
+<tr><th>ReRandG1<th><span name="ReRandG1T">0</span>
+<tr><th>ReRandG2<th><span name="ReRandG2T">0</span>
+<tr><th>ReRandGT<th><span name="ReRandGTT">0</span>
+<tr><th>Mul<th><span name="MulT">0</span>
+<tr><th>DecG1<th><span name="DecG1T">0</span>
+<tr><th>DecG2<th><span name="DecG2T">0</span>
+<tr><th>DecGT<th><span name="DecGTT">0</span>
+<tr><th>DecGT(small)<th><span name="DecGTsT">0</span>
+<tr><th>DecG1 via GT<th><span name="DecG1ViaGTT">0</span>
+<tr><th>DecG2 via GT<th><span name="DecG2ViaGTT">0</span>
+</table>
 
 </body>
 </html>
