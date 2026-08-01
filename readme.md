@@ -49,9 +49,10 @@ K. Shimizu, and T. Teruya. ASIACCS 2018
 * [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # How to build
-Install [Emscripten](https://emscripten.org/).
+Install Clang and lld.
 
 ```
+sudo apt install clang lld
 pnpm install
 git submodule update --init --resurcive
 cd src
