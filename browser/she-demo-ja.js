@@ -2,13 +2,24 @@ function getValue (name) { return document.getElementsByName(name)[0].value }
 function setValue (name, val) { document.getElementsByName(name)[0].value = val }
 function getText (name) { return document.getElementsByName(name)[0].innerText }
 function setText (name, val) { document.getElementsByName(name)[0].innerText = val }
+function newCell (text, className) {
+  const e = document.createElement('td')
+  if (className) e.className = className
+  e.textContent = text
+  return e
+}
+function newRow (cells) {
+  const tr = document.createElement('tr')
+  cells.forEach((c) => tr.appendChild(c))
+  return tr
+}
 
 let sec = null
 let pub = null
 
 function clearTable () {
-  $('#client_table').html('')
-  $('#server_table').html('')
+  document.getElementById('client_table').innerHTML = ''
+  document.getElementById('server_table').innerHTML = ''
 }
 
 function initShe (curveType) {
@@ -40,7 +51,8 @@ function initShe (curveType) {
 }
 
 let prevSelectedCurve = 0
-initShe(0)
+// scripts are loaded in <head>, so wait for the DOM before touching it
+window.addEventListener('DOMContentLoaded', () => { initShe(0) })
 
 function onChangeSelectCurve () {
   const obj = document.selectCurve.curveType
@@ -106,17 +118,12 @@ function appendXY (x, y) {
   console.log('x = ' + x + ', y = ' + y)
   const c1 = pub.encG1(x)
   const c2 = pub.encG2(y)
-  $('#client_table').append(
-    $('<tr>').append(
-      $('<td>').text(x)
-    ).append(
-      $('<td>').text(y)
-    ).append(
-      $('<td class="encG1x">').text(c1.serializeToHexStr())
-    ).append(
-      $('<td class="encG2y">').text(c2.serializeToHexStr())
-    )
-  )
+  document.getElementById('client_table').appendChild(newRow([
+    newCell(x),
+    newCell(y),
+    newCell(c1.serializeToHexStr(), 'encG1x'),
+    newCell(c2.serializeToHexStr(), 'encG2y')
+  ]))
 }
 
 function append () {
@@ -136,55 +143,51 @@ function appendRand () {
 
 function send () {
   const ct1 = []
-  $('.encG1x').each(function () {
-    ct1.push($(this).text())
+  document.querySelectorAll('.encG1x').forEach((e) => {
+    ct1.push(e.textContent)
   })
   const ct2 = []
-  $('.encG2y').each(function () {
-    ct2.push($(this).text())
+  document.querySelectorAll('.encG2y').forEach((e) => {
+    ct2.push(e.textContent)
   })
-  const obj = $('#server_table')
-  obj.html('')
+  const obj = document.getElementById('server_table')
+  obj.innerHTML = ''
   {
     const header = [
       'Enc(x)', 'Enc(y)', 'Enc(x * y)'
     ]
-    const t = $('<tr>').attr('id', 'header')
+    const t = document.createElement('tr')
+    t.id = 'header'
     for (let i = 0; i < header.length; i++) {
-      t.append(
-        $('<th>').append(header[i])
-      )
+      const th = document.createElement('th')
+      th.textContent = header[i]
+      t.appendChild(th)
     }
-    obj.append(t)
+    obj.appendChild(t)
   }
   for (let i = 0; i < ct1.length; i++) {
-    const t = $('<tr>')
-    t.append(
-      $('<td class="encG1xS">').append(ct1[i])
-    ).append(
-      $('<td class="encG2yS">').append(ct2[i])
-    ).append(
-      $('<td class="encGTxyS">').append('')
-    )
-    obj.append(t)
+    obj.appendChild(newRow([
+      newCell(ct1[i], 'encG1xS'),
+      newCell(ct2[i], 'encG2yS'),
+      newCell('', 'encGTxyS')
+    ]))
   }
 }
 
 function mul () {
-  $('.encG1xS').each(function () {
-    const o = $(this)
-    const c1 = she.deserializeHexStrToCipherTextG1(o.text())
-    const c2 = she.deserializeHexStrToCipherTextG2(o.next().text())
+  document.querySelectorAll('.encG1xS').forEach((e) => {
+    const e2 = e.nextElementSibling
+    const c1 = she.deserializeHexStrToCipherTextG1(e.textContent)
+    const c2 = she.deserializeHexStrToCipherTextG2(e2.textContent)
     const ct = she.mul(c1, c2)
-    o.next().next().text(ct.serializeToHexStr())
+    e2.nextElementSibling.textContent = ct.serializeToHexStr()
   })
 }
 
 function sum () {
   let csum = pub.encGT(0)
-  $('.encGTxyS').each(function () {
-    const s = $(this).text()
-    const ct = she.deserializeHexStrToCipherTextGT(s)
+  document.querySelectorAll('.encGTxyS').forEach((e) => {
+    const ct = she.deserializeHexStrToCipherTextGT(e.textContent)
     csum = she.add(csum, ct)
   })
   setText('encSumS', csum.serializeToHexStr())

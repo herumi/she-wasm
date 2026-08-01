@@ -13,15 +13,26 @@ function setText (name, val) {
 console.log(`setText ${e} ${e.length}`)
   if (e.length > 0) e[0].innerText = val
 }
+function newCell (text, className) {
+  const e = document.createElement('td')
+  if (className) e.className = className
+  e.textContent = text
+  return e
+}
+function newRow (cells) {
+  const tr = document.createElement('tr')
+  cells.forEach((c) => tr.appendChild(c))
+  return tr
+}
 
 let sec = null
 let pub = null
 let buttonEls = null
 
 function clearTable () {
-  $('#client_table').html('')
-  $('#server_table').html('')
-  $('#cross_table').html('')
+  document.getElementById('client_table').innerHTML = ''
+  document.getElementById('server_table').innerHTML = ''
+  document.getElementById('cross_table').innerHTML = ''
   setText('encXsumS', '')
   setText('encYsumS', '')
   setText('encSumS', '')
@@ -49,7 +60,8 @@ function handleClick (ev) {
   }
 }
 
-{
+// scripts are loaded in <head>, so wait for the DOM before touching it
+window.addEventListener('DOMContentLoaded', () => {
   const curveType = 0
   clearTable()
   she.init(curveType).then(() => {
@@ -69,23 +81,18 @@ function handleClick (ev) {
     })
     setText('status', `ok`)
   })
-}
+})
 
 function appendXY (x, y) {
   console.log('x = ' + x + ', y = ' + y)
   const c1 = pub.encG1(x)
   const c2 = pub.encG2(y)
-  $('#client_table').append(
-    $('<tr>').append(
-      $('<td>').text(x)
-    ).append(
-      $('<td>').text(y)
-    ).append(
-      $('<td class="encG1x">').text(c1.serializeToHexStr())
-    ).append(
-      $('<td class="encG2y">').text(c2.serializeToHexStr())
-    )
-  )
+  document.getElementById('client_table').appendChild(newRow([
+    newCell(x),
+    newCell(y),
+    newCell(c1.serializeToHexStr(), 'encG1x'),
+    newCell(c2.serializeToHexStr(), 'encG2y')
+  ]))
 }
 
 function append () {
@@ -110,44 +117,35 @@ function appendRand () {
 
 function send () {
   const ct1 = []
-  /*
   document.querySelectorAll('.encG1x').forEach((e) => {
-    ct1.push(e.innerText)
-  })
-  */
-  $('.encG1x').each(function () {
-    ct1.push($(this).text())
+    ct1.push(e.textContent)
   })
   const ct2 = []
-  $('.encG2y').each(function () {
-    ct2.push($(this).text())
+  document.querySelectorAll('.encG2y').forEach((e) => {
+    ct2.push(e.textContent)
   })
-  const obj = $('#server_table')
-  obj.html('')
+  const obj = document.getElementById('server_table')
+  obj.innerHTML = ''
   for (let i = 0; i < ct1.length; i++) {
-    const t = $('<tr>')
-    t.append(
-      $('<td class="encG1xS">').append(ct1[i])
-    ).append(
-      $('<td class="encG2yS">').append(ct2[i])
-    ).append(
-      $('<td class="encGTxyS">').append('')
-    )
-    obj.append(t)
+    obj.appendChild(newRow([
+      newCell(ct1[i], 'encG1xS'),
+      newCell(ct2[i], 'encG2yS'),
+      newCell('', 'encGTxyS')
+    ]))
   }
 }
 
 function mulXY () {
   let xSum = pub.encG1(0)
   let ySum = pub.encG2(0)
-  $('.encG1xS').each(function () {
-    const o = $(this)
-    const c1 = she.deserializeHexStrToCipherTextG1(o.text())
-    const c2 = she.deserializeHexStrToCipherTextG2(o.next().text())
+  document.querySelectorAll('.encG1xS').forEach((e) => {
+    const e2 = e.nextElementSibling
+    const c1 = she.deserializeHexStrToCipherTextG1(e.textContent)
+    const c2 = she.deserializeHexStrToCipherTextG2(e2.textContent)
     const ct = she.mul(c1, c2)
     xSum = she.add(xSum, c1)
     ySum = she.add(ySum, c2)
-    o.next().next().text(ct.serializeToHexStr())
+    e2.nextElementSibling.textContent = ct.serializeToHexStr()
   })
   setText('encXsumS', xSum.serializeToHexStr())
   setText('encYsumS', ySum.serializeToHexStr())
@@ -156,9 +154,8 @@ function mulXY () {
 function sumCross () {
   // sum Enc(xi yi)
   let sum = pub.encGT(0)
-  $('.encGTxyS').each(function () {
-    const s = $(this).text()
-    const ct = she.deserializeHexStrToCipherTextGT(s)
+  document.querySelectorAll('.encGTxyS').forEach((e) => {
+    const ct = she.deserializeHexStrToCipherTextGT(e.textContent)
     sum = she.add(sum, ct)
   })
   setText('encSumS', sum.serializeToHexStr())
@@ -179,9 +176,10 @@ function dec () {
   const x = sec.dec(she.deserializeHexStrToCipherTextG1(getText('encXsumC')))
   const y = sec.dec(she.deserializeHexStrToCipherTextG2(getText('encYsumC')))
   const xy = sec.dec(she.deserializeHexStrToCipherTextGT(getText('encSumC')))
-  const n = $('#client_table').children().length
+  const n = document.getElementById('client_table').children.length
   console.log(`n=${n}, x=${x}, y=${y}, xy=${xy}`)
-  const obj = $('#cross_table').html('')
+  const obj = document.getElementById('cross_table')
+  obj.innerHTML = ''
 
   const tbl = [
     ['#{y=0}', n - x - y + xy, x - xy, n - y],
@@ -189,16 +187,6 @@ function dec () {
     ['sum', n - x, x, n],
   ]
   for (let i = 0; i < tbl.length; i++) {
-    const t = $('<tr>')
-    t.append(
-      $('<td>').append(tbl[i][0])
-    ).append(
-      $('<td>').append(tbl[i][1])
-    ).append(
-      $('<td>').append(tbl[i][2])
-    ).append(
-      $('<td>').append(tbl[i][3])
-    )
-    obj.append(t)
+    obj.appendChild(newRow(tbl[i].map((v) => newCell(v))))
   }
 }
