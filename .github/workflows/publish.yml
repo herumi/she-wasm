@@ -1,0 +1,45 @@
+name: Publish Package
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC-based Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install build dependencies
+        run: sudo apt install -y clang-18 lld-18 binaryen
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build package
+        run: pnpm run build
+
+      # Publish with provenance to ensure transparency and security
+      # --provenance generates attestations linking the package to the source code and build
+      # Requires id-token: write permission and npm Trusted Publishing setup
+      # With Trusted Publishing, no token is needed - authentication via OIDC
+      - name: Publish to npm
+        run: npm publish --provenance --access public
