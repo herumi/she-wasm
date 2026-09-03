@@ -8,7 +8,8 @@
     "build": "pnpm run build:she_c.js && pnpm run build:browser",
     "build:she_c.js": "cd src && make",
     "build:browser": "cd browser && pnpm install && pnpm webpack",
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "update-all": "pnpm update && pnpm --dir browser update"
   },
   "repository": {
     "type": "git",
