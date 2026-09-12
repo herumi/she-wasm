@@ -596,7 +596,7 @@ function zkpEqTest () {
     assert(pub.verifyZkpEq(c1, c2, zkp))
     serializeSubTest(zkp, she.ZkpEq)
     zkp.a_[0]++
-    assert(!pub.verify(c1, c2, zkp))
+    assert(!pub.verifyZkpEq(c1, c2, zkp))
   }
 }
 
