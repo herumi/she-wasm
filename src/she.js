@@ -167,7 +167,15 @@ const setupFactory = (createModule, getRandomValues) => {
         return v
       }
     }
+    // plaintexts are passed to wasm as C int; reject anything outside signed int32
+    // instead of letting ToInt32 silently turn NaN / 2**40 / '2abc' into 0 or -1
+    const assertInt32 = (m, label) => {
+      if (typeof m !== 'number' || !Number.isInteger(m) || m < -0x80000000 || m > 0x7fffffff) {
+        throw (label + ':bad int32:' + m)
+      }
+    }
     const callEnc = (func, cstr, pub, m) => {
+      assertInt32(m, 'enc')
       const c = new cstr()
       const stack = mod.stackSave()
       const cPos = c._salloc()
@@ -178,6 +186,7 @@ const setupFactory = (createModule, getRandomValues) => {
       return c
     }
     const callPPKEncWithZkpBin = (func, cstr, pubPos, m) => {
+      assertInt32(m, 'encWithZkpBin')
       const c = new cstr()
       const zkp = new exports.ZkpBin()
       const stack = mod.stackSave()
@@ -198,6 +207,8 @@ const setupFactory = (createModule, getRandomValues) => {
       return r
     }
     const callPPKEncWithZkpSet = (func, cstr, pubPos, m, mVec) => {
+      assertInt32(m, 'encWithZkpSet')
+      mVec.forEach(v => assertInt32(v, 'encWithZkpSet:mVec'))
       const mSize = mVec.length
       const c = new cstr()
       const zkp = new exports.ZkpSet(mSize)
@@ -215,6 +226,7 @@ const setupFactory = (createModule, getRandomValues) => {
       return [c, zkp]
     }
     const callPPKEnc = (func, cstr, ppub, m) => {
+      assertInt32(m, 'enc')
       const c = new cstr()
       const stack = mod.stackSave()
       const cPos = c._salloc()
@@ -393,7 +405,7 @@ const setupFactory = (createModule, getRandomValues) => {
           if (cur) {
             // if cur exists, then use it
             if (a.length !== cur.length) {
-              throw (`bad length a.len=${a_.length}, pos_=${this.pos_}, len=${cur.length}`)
+              throw (`bad length a.len=${a.length}, pos_=${this.pos_}, len=${cur.length}`)
             }
             a.set(cur)
           } else {
@@ -406,6 +418,16 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       _reset () {
         exports.setRandFunc(this.orgRandFunc_)
+      }
+    }
+    // call fn() with rh as the random source and always restore the original one
+    const withRandHistory = (rh, fn) => {
+      if (!rh) return fn()
+      rh._set()
+      try {
+        return fn()
+      } finally {
+        rh._reset()
       }
     }
     exports.strToRandHistory = (s) => {
@@ -614,41 +636,23 @@ const setupFactory = (createModule, getRandomValues) => {
       }
 
       encG1 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEnc(mod._shePrecomputedPublicKeyEncG1, exports.CipherTextG1, this.p, m))
       }
       encG2 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncG2, exports.CipherTextG2, this.p, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEnc(mod._shePrecomputedPublicKeyEncG2, exports.CipherTextG2, this.p, m))
       }
       encGT (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEnc(mod._shePrecomputedPublicKeyEncGT, exports.CipherTextGT, this.p, m))
       }
       // return [Enc(m), Zkp]
       encWithZkpBinG1 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG1, exports.CipherTextG1, this.p, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG1, exports.CipherTextG1, this.p, m))
       }
       encWithZkpBinG2 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEncWithZkpBin(mod._shePrecomputedPublicKeyEncWithZkpBinG2, exports.CipherTextG2, this.p, m))
       }
       encWithZkpSetG1 (m, mVec, rh = undefined) {
-        if (rh) rh._set()
-        const r = callPPKEncWithZkpSet(mod._shePrecomputedPublicKeyEncWithZkpSetG1, exports.CipherTextG1, this.p, m, mVec)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callPPKEncWithZkpSet(mod._shePrecomputedPublicKeyEncWithZkpSetG1, exports.CipherTextG1, this.p, m, mVec))
       }
       verify (c, zkp) {
         let verify = null
@@ -705,65 +709,57 @@ const setupFactory = (createModule, getRandomValues) => {
       }
 
       encG1 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callEnc(mod._sheEncG1, exports.CipherTextG1, this, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callEnc(mod._sheEncG1, exports.CipherTextG1, this, m))
       }
       encG2 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callEnc(mod._sheEncG2, exports.CipherTextG2, this, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callEnc(mod._sheEncG2, exports.CipherTextG2, this, m))
       }
       encGT (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callEnc(mod._sheEncGT, exports.CipherTextGT, this, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callEnc(mod._sheEncGT, exports.CipherTextGT, this, m))
       }
       // return [Enc(m), Zkp]
       encWithZkpBinG1 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callEncWithZkpBin(mod._sheEncWithZkpBinG1, exports.CipherTextG1, this, m))
       }
       encWithZkpBinG2 (m, rh = undefined) {
-        if (rh) rh._set()
-        const r = callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => callEncWithZkpBin(mod._sheEncWithZkpBinG2, exports.CipherTextG2, this, m))
       }
       encWithZkpSetG1 (m, mVec, rh = undefined) {
-        if (rh) rh._set()
-        const stack = mod.stackSave()
-        const pubPos = this._sallocAndCopy()
-        const r = callPPKEncWithZkpSet(mod._sheEncWithZkpSetG1, exports.CipherTextG1, pubPos, m, mVec)
-        mod.stackRestore(stack)
-        if (rh) rh._reset()
-        return r
+        return withRandHistory(rh, () => {
+          const stack = mod.stackSave()
+          try {
+            const pubPos = this._sallocAndCopy()
+            return callPPKEncWithZkpSet(mod._sheEncWithZkpSetG1, exports.CipherTextG1, pubPos, m, mVec)
+          } finally {
+            mod.stackRestore(stack)
+          }
+        })
       }
 
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpBinEq (m, rh = undefined) {
-        if (rh) rh._set()
-        const c1 = new exports.CipherTextG1()
-        const c2 = new exports.CipherTextG2()
-        const zkp = new exports.ZkpBinEq()
-        const stack = mod.stackSave()
-        const pubPos = this._sallocAndCopy()
-        const c1Pos = c1._salloc()
-        const c2Pos = c2._salloc()
-        const zkpPos = zkp._salloc()
-        const r = mod._sheEncWithZkpBinEq(c1Pos, c2Pos, zkpPos, pubPos, m)
-        zkp._save(zkpPos)
-        c2._save(c2Pos)
-        c1._save(c1Pos)
-        mod.stackRestore(stack)
-        if (rh) rh._reset()
-        if (r) throw ('encWithZkpBinEq:bad m:' + m)
-        return [c1, c2, zkp]
+        assertInt32(m, 'encWithZkpBinEq')
+        return withRandHistory(rh, () => {
+          const c1 = new exports.CipherTextG1()
+          const c2 = new exports.CipherTextG2()
+          const zkp = new exports.ZkpBinEq()
+          const stack = mod.stackSave()
+          let r
+          try {
+            const pubPos = this._sallocAndCopy()
+            const c1Pos = c1._salloc()
+            const c2Pos = c2._salloc()
+            const zkpPos = zkp._salloc()
+            r = mod._sheEncWithZkpBinEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+            zkp._save(zkpPos)
+            c2._save(c2Pos)
+            c1._save(c1Pos)
+          } finally {
+            mod.stackRestore(stack)
+          }
+          if (r) throw ('encWithZkpBinEq:bad m:' + m)
+          return [c1, c2, zkp]
+        })
       }
       // check dec(c1) == dec(c2) in {0, 1}
       verifyZkpBinEq (c1, c2, zkp) {
@@ -781,23 +777,28 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpEq (m, rh = undefined) {
-        if (rh) rh._set()
-        const c1 = new exports.CipherTextG1()
-        const c2 = new exports.CipherTextG2()
-        const zkp = new exports.ZkpEq()
-        const stack = mod.stackSave()
-        const pubPos = this._sallocAndCopy()
-        const c1Pos = c1._salloc()
-        const c2Pos = c2._salloc()
-        const zkpPos = zkp._salloc()
-        const r = mod._sheEncWithZkpEq(c1Pos, c2Pos, zkpPos, pubPos, m)
-        zkp._save(zkpPos)
-        c2._save(c2Pos)
-        c1._save(c1Pos)
-        mod.stackRestore(stack)
-        if (rh) rh._reset()
-        if (r) throw ('encWithZkpEq:bad m:' + m)
-        return [c1, c2, zkp]
+        assertInt32(m, 'encWithZkpEq')
+        return withRandHistory(rh, () => {
+          const c1 = new exports.CipherTextG1()
+          const c2 = new exports.CipherTextG2()
+          const zkp = new exports.ZkpEq()
+          const stack = mod.stackSave()
+          let r
+          try {
+            const pubPos = this._sallocAndCopy()
+            const c1Pos = c1._salloc()
+            const c2Pos = c2._salloc()
+            const zkpPos = zkp._salloc()
+            r = mod._sheEncWithZkpEq(c1Pos, c2Pos, zkpPos, pubPos, m)
+            zkp._save(zkpPos)
+            c2._save(c2Pos)
+            c1._save(c1Pos)
+          } finally {
+            mod.stackRestore(stack)
+          }
+          if (r) throw ('encWithZkpEq:bad m:' + m)
+          return [c1, c2, zkp]
+        })
       }
       // check dec(c1) == dec(c2)
       verifyZkpEq (c1, c2, zkp) {
@@ -854,6 +855,7 @@ const setupFactory = (createModule, getRandomValues) => {
         return r === 1
       }
       verifyZkpDec (c, zkp, m) {
+        assertInt32(m, 'verifyZkpDec')
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           throw ('verifyZkpDec:bad type')
         }
@@ -1037,6 +1039,7 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextGT.prototype.isPrototypeOf(c)) {
           throw ('verify:bad c')
         }
+        assertInt32(m, 'verify')
         const stack = mod.stackSave()
         const auxPos = this._sallocAndCopy()
         const cPos = c._sallocAndCopy()
@@ -1154,6 +1157,7 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.mulInt:not supported')
       }
+      assertInt32(y, 'mulInt')
       const stack = mod.stackSave()
       const zPos = z._salloc()
       const xPos = x._sallocAndCopy()

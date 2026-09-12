@@ -14,14 +14,18 @@ const curveTest = (curveType, name) => {
         controlledRandomValues(g1only)
         minimumTestG1()
         randHistoryAddTest()
+        randHistoryRestoreTest(g1only)
         zkpSetTest()
         zkpDecTest()
         encDecTest(g1only)
         serializeTest(g1only)
+        largeStackTest()
+        // if (name === 'BN254') decInt32OverflowTest() // slow (widened DLP), run once
         rerandTest(g1only)
         ppubTest(g1only)
         zkpBinTest(g1only)
         mulIntTest(g1only)
+        int32Test(g1only)
         if (!g1only) {
           minimumTest()
           zkpDecGTTest()
@@ -49,6 +53,44 @@ async function curveTestAll () {
 }
 
 curveTestAll()
+
+function largeStackTest () {
+  let thrown = false
+  try {
+    // throw if data size is large
+    new she.SecretKey().deserialize(new Uint8Array(2 * 1024 * 1024))
+  } catch (e) {
+    thrown = true
+  }
+  assert(thrown)
+  // the module must still be usable afterwards
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m = 123
+  assert.equal(sec.dec(pub.encG1(m)), m)
+}
+
+function decInt32OverflowTest () {
+  console.log('decInt32OverflowTest')
+  // sheDec* takes mclInt (= int on wasm), so a plaintext outside int32 must be
+  // rejected by the C layer instead of being silently truncated
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  // widen the DLP range so that |m| = 2^31 is solvable
+  she.setTryNum(1100000)
+  try {
+    const half = 1073741824 // 2^30
+    const cp = she.add(pub.encG1(half), pub.encG1(half)) // 2^31
+    const cn = she.add(pub.encG1(-half), pub.encG1(-half)) // -2^31
+    console.log('decoding...')
+    assert.equal(sec.dec(cn), -2147483648)
+    assert.throws(() => sec.dec(cp))
+  } finally {
+    she.setTryNum(2048)
+  }
+}
 
 function minimumTest () {
   const sec = new she.SecretKey()
@@ -103,6 +145,43 @@ function randHistoryAddTest () {
     // d is recovered from r12
     assert.equal(c12.serializeToHexStr(), d.serializeToHexStr())
   }
+}
+
+function randHistoryRestoreTest (g1only) {
+  console.log(`randHistoryRestoreTest g1only=${g1only}`)
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const org = she.getRandFunc()
+  // calls which throw because of a bad plaintext
+  let calls = [
+    (p, rh) => p.encWithZkpBinG1(2, rh),
+    (p, rh) => p.encWithZkpSetG1(5, [1, 2, 3], rh)
+  ]
+  if (!g1only) {
+    calls = calls.concat([
+      (p, rh) => p.encWithZkpBinG2(2, rh),
+      (p, rh) => p.encWithZkpBinEq(2, rh)
+    ])
+  }
+  const check = (p, call) => {
+    const rh = new she.RandHistory()
+    assert.throws(() => call(p, rh))
+    // the global random function must be restored even if the call throws
+    assert(she.getRandFunc() === org)
+    // and rh must not record random values of unrelated calls
+    const n = rh.a_.length
+    pub.encG1(1)
+    sec.setByCSPRNG()
+    assert.equal(rh.a_.length, n)
+  }
+  calls.forEach(call => {
+    check(pub, call)
+    check(ppub, call)
+  })
+  ppub.destroy()
 }
 
 function controlledRandomValues (g1only) {
@@ -518,7 +597,7 @@ function zkpEqTest () {
     assert(pub.verifyZkpEq(c1, c2, zkp))
     serializeSubTest(zkp, she.ZkpEq)
     zkp.a_[0]++
-    assert(!pub.verify(c1, c2, zkp))
+    assert(!pub.verifyZkpEq(c1, c2, zkp))
   }
 }
 
@@ -557,6 +636,43 @@ function zkpDecGTTest () {
   assert(!aux.verify(c1, zkp, m))
   zkp.a_[0]++
   assert(!aux.verify(c, zkp, m))
+}
+
+function int32Test (g1only) {
+  console.log(`int32Test g1only=${g1only}`)
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const bad = [NaN, undefined, null, '3', '2abc', 2.5, 2 ** 31, -(2 ** 31) - 1, 2 ** 40, Number.MAX_SAFE_INTEGER, Infinity, 3n]
+  const good = [0, 1, -1, 2 ** 31 - 1, -(2 ** 31)]
+  let methods = ['encG1', 'encWithZkpBinG1']
+  if (!g1only) methods = methods.concat(['encG2', 'encGT', 'encWithZkpBinG2'])
+  const pubs = [pub, ppub]
+  pubs.forEach(p => {
+    methods.forEach(method => {
+      bad.forEach(m => assert.throws(() => p[method](m), `${method}(${m})`))
+    })
+    bad.forEach(m => assert.throws(() => p.encWithZkpSetG1(m, [0, 1]), `encWithZkpSetG1(${m})`))
+    bad.forEach(m => assert.throws(() => p.encWithZkpSetG1(0, [0, m]), `encWithZkpSetG1 mVec ${m}`))
+    good.forEach(m => p.encG1(m))
+  })
+  if (!g1only) {
+    bad.forEach(m => assert.throws(() => pub.encWithZkpBinEq(m), `encWithZkpBinEq(${m})`))
+    bad.forEach(m => assert.throws(() => pub.encWithZkpEq(m), `encWithZkpEq(${m})`))
+    good.forEach(m => pub.encWithZkpEq(m))
+  }
+  const c = pub.encG1(1)
+  bad.forEach(m => assert.throws(() => she.mulInt(c, m), `mulInt(${m})`))
+  good.forEach(m => she.mulInt(c, m))
+  // verify(c, zkp, m) must not accept m + 2^32
+  const [m, zkp] = sec.decWithZkpDec(c, pub)
+  assert.equal(m, 1)
+  assert(pub.verify(c, zkp, 1))
+  assert(!pub.verify(c, zkp, 2))
+  assert.throws(() => pub.verify(c, zkp, 1 + 2 ** 32))
+  ppub.destroy()
 }
 
 function mulIntTest (g1only) {
