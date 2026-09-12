@@ -18,6 +18,7 @@ const curveTest = (curveType, name) => {
         zkpDecTest()
         encDecTest(g1only)
         serializeTest(g1only)
+        largeStackTest()
         rerandTest(g1only)
         ppubTest(g1only)
         zkpBinTest(g1only)
@@ -49,6 +50,23 @@ async function curveTestAll () {
 }
 
 curveTestAll()
+
+function largeStackTest () {
+  let thrown = false
+  try {
+    // throw if data size is large
+    new she.SecretKey().deserialize(new Uint8Array(2 * 1024 * 1024))
+  } catch (e) {
+    thrown = true
+  }
+  assert(thrown)
+  // the module must still be usable afterwards
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const m = 123
+  assert.equal(sec.dec(pub.encG1(m)), m)
+}
 
 function minimumTest () {
   const sec = new she.SecretKey()
