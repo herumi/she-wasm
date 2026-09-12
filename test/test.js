@@ -14,11 +14,13 @@ const curveTest = (curveType, name) => {
         controlledRandomValues(g1only)
         minimumTestG1()
         randHistoryAddTest()
+        randHistoryRestoreTest(g1only)
         zkpSetTest()
         zkpDecTest()
         encDecTest(g1only)
         serializeTest(g1only)
         largeStackTest()
+        // if (name === 'BN254') decInt32OverflowTest() // slow (widened DLP), run once
         rerandTest(g1only)
         ppubTest(g1only)
         zkpBinTest(g1only)
@@ -66,6 +68,27 @@ function largeStackTest () {
   const pub = sec.getPublicKey()
   const m = 123
   assert.equal(sec.dec(pub.encG1(m)), m)
+}
+
+function decInt32OverflowTest () {
+  console.log('decInt32OverflowTest')
+  // sheDec* takes mclInt (= int on wasm), so a plaintext outside int32 must be
+  // rejected by the C layer instead of being silently truncated
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  // widen the DLP range so that |m| = 2^31 is solvable
+  she.setTryNum(1100000)
+  try {
+    const half = 1073741824 // 2^30
+    const cp = she.add(pub.encG1(half), pub.encG1(half)) // 2^31
+    const cn = she.add(pub.encG1(-half), pub.encG1(-half)) // -2^31
+    console.log('decoding...')
+    assert.equal(sec.dec(cn), -2147483648)
+    assert.throws(() => sec.dec(cp))
+  } finally {
+    she.setTryNum(2048)
+  }
 }
 
 function minimumTest () {
@@ -121,6 +144,43 @@ function randHistoryAddTest () {
     // d is recovered from r12
     assert.equal(c12.serializeToHexStr(), d.serializeToHexStr())
   }
+}
+
+function randHistoryRestoreTest (g1only) {
+  console.log(`randHistoryRestoreTest g1only=${g1only}`)
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const org = she.getRandFunc()
+  // calls which throw because of a bad plaintext
+  let calls = [
+    (p, rh) => p.encWithZkpBinG1(2, rh),
+    (p, rh) => p.encWithZkpSetG1(5, [1, 2, 3], rh)
+  ]
+  if (!g1only) {
+    calls = calls.concat([
+      (p, rh) => p.encWithZkpBinG2(2, rh),
+      (p, rh) => p.encWithZkpBinEq(2, rh)
+    ])
+  }
+  const check = (p, call) => {
+    const rh = new she.RandHistory()
+    assert.throws(() => call(p, rh))
+    // the global random function must be restored even if the call throws
+    assert(she.getRandFunc() === org)
+    // and rh must not record random values of unrelated calls
+    const n = rh.a_.length
+    pub.encG1(1)
+    sec.setByCSPRNG()
+    assert.equal(rh.a_.length, n)
+  }
+  calls.forEach(call => {
+    check(pub, call)
+    check(ppub, call)
+  })
+  ppub.destroy()
 }
 
 function controlledRandomValues (g1only) {
