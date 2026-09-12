@@ -38,14 +38,17 @@ function initShe (curveType) {
   she.init(curveType).then(() => {
     setText('status', `curveType=${curveType} status initializing...`)
     if (curveType === she.BN254) {
+      const gtTableSha256 = 'da53495d1e73767a6ad6ed2ee54027653b8be783c327c1ad0ce83801d2348b07'
       fetch('https://herumi.github.io/she-dlp-table/she-dlp-0-20-gt.bin')
         .then(res => res.arrayBuffer())
-        .then(buffer => {
+        .then(buffer => crypto.subtle.digest('SHA-256', buffer).then(digest => {
+          const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+          if (hex !== gtTableSha256) throw new Error('she-dlp-0-20-gt.bin integrity check failed')
           const a = new Uint8Array(buffer)
           she.loadTableForGTDLP(a)
           console.log('load Table done')
           initSecPub(she)
-        })
+        }))
     } else {
       initSecPub(she)
     }
