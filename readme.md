@@ -14,7 +14,7 @@ EncG1(x1) * EncG2(y1) + ... + EncG1(xn) * EncG2(yn) = EncGT(x1 * y1 + ... + xn *
 see [mcl](https://github.com/herumi/mcl)
 
 # News
-- 2026/Sep/12 v2.0.0 Security fixes.
+- 2026/Sep/12 v2.0.1 Security fixes.
   - Breaking change: `enc*`, `encWithZkp*`, `mulInt`, and `verify(c, zkp, m)` throw if the plaintext is not an integer in the signed int32 range (`NaN`, `2.5`, `'3'`, `2**31`, ...). Previously such values were silently converted by ToInt32 (e.g. `encG1(NaN)` was `Enc(0)`).
   - `dec` fails instead of silently truncating a plaintext beyond int32 when the DLP range is widened by `setTryNum`.
   - The random function is restored even if `enc*(m, randHistory)` throws.
