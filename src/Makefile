@@ -19,7 +19,8 @@ CFLAGS+=-I $(WASM_DIR) -I $(MCL_DIR)/include -I $(MCL_DIR)/src
 CFLAGS+=-Wall -Wextra -MMD -MP
 CXXFLAGS=$(CFLAGS) -std=c++03
 
-LDFLAGS=--no-entry --export-dynamic -z stack-size=1048576
+STACK_SIZE?=1048576
+LDFLAGS=--no-entry --export-dynamic -z stack-size=$(STACK_SIZE)
 LDFLAGS+=--export=__stack_pointer --export=__wasm_call_ctors
 LDFLAGS+=--export=malloc --export=free
 LDFLAGS+=--export=stackSave --export=stackAlloc --export=stackRestore
@@ -44,7 +45,7 @@ SHE_JS=she_c.js
 all: $(SHE_JS)
 
 $(SHE_JS): $(WASM) $(WASM_DIR)/glue.js
-	python3 -c "import base64;w=base64.b64encode(open('$(WASM)','rb').read()).decode();print(open('$(WASM_DIR)/glue.js').read().replace('@@WASM_BASE64@@',w),end='')" > $@
+	python3 -c "import base64;w=base64.b64encode(open('$(WASM)','rb').read()).decode();print(open('$(WASM_DIR)/glue.js').read().replace('@@WASM_BASE64@@',w).replace('@@STACK_SIZE@@','$(STACK_SIZE)'),end='')" > $@
 
 $(WASM): $(OBJS)
 	$(LD) -o $@.pre $(OBJS) $(LDFLAGS)
