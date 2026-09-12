@@ -25,6 +25,7 @@ const curveTest = (curveType, name) => {
         ppubTest(g1only)
         zkpBinTest(g1only)
         mulIntTest(g1only)
+        int32Test(g1only)
         if (!g1only) {
           minimumTest()
           zkpDecGTTest()
@@ -635,6 +636,43 @@ function zkpDecGTTest () {
   assert(!aux.verify(c1, zkp, m))
   zkp.a_[0]++
   assert(!aux.verify(c, zkp, m))
+}
+
+function int32Test (g1only) {
+  console.log(`int32Test g1only=${g1only}`)
+  const sec = new she.SecretKey()
+  sec.setByCSPRNG()
+  const pub = sec.getPublicKey()
+  const ppub = new she.PrecomputedPublicKey()
+  ppub.init(pub)
+  const bad = [NaN, undefined, null, '3', '2abc', 2.5, 2 ** 31, -(2 ** 31) - 1, 2 ** 40, Number.MAX_SAFE_INTEGER, Infinity, 3n]
+  const good = [0, 1, -1, 2 ** 31 - 1, -(2 ** 31)]
+  let methods = ['encG1', 'encWithZkpBinG1']
+  if (!g1only) methods = methods.concat(['encG2', 'encGT', 'encWithZkpBinG2'])
+  const pubs = [pub, ppub]
+  pubs.forEach(p => {
+    methods.forEach(method => {
+      bad.forEach(m => assert.throws(() => p[method](m), `${method}(${m})`))
+    })
+    bad.forEach(m => assert.throws(() => p.encWithZkpSetG1(m, [0, 1]), `encWithZkpSetG1(${m})`))
+    bad.forEach(m => assert.throws(() => p.encWithZkpSetG1(0, [0, m]), `encWithZkpSetG1 mVec ${m}`))
+    good.forEach(m => p.encG1(m))
+  })
+  if (!g1only) {
+    bad.forEach(m => assert.throws(() => pub.encWithZkpBinEq(m), `encWithZkpBinEq(${m})`))
+    bad.forEach(m => assert.throws(() => pub.encWithZkpEq(m), `encWithZkpEq(${m})`))
+    good.forEach(m => pub.encWithZkpEq(m))
+  }
+  const c = pub.encG1(1)
+  bad.forEach(m => assert.throws(() => she.mulInt(c, m), `mulInt(${m})`))
+  good.forEach(m => she.mulInt(c, m))
+  // verify(c, zkp, m) must not accept m + 2^32
+  const [m, zkp] = sec.decWithZkpDec(c, pub)
+  assert.equal(m, 1)
+  assert(pub.verify(c, zkp, 1))
+  assert(!pub.verify(c, zkp, 2))
+  assert.throws(() => pub.verify(c, zkp, 1 + 2 ** 32))
+  ppub.destroy()
 }
 
 function mulIntTest (g1only) {

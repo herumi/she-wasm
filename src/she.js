@@ -167,7 +167,15 @@ const setupFactory = (createModule, getRandomValues) => {
         return v
       }
     }
+    // plaintexts are passed to wasm as C int; reject anything outside signed int32
+    // instead of letting ToInt32 silently turn NaN / 2**40 / '2abc' into 0 or -1
+    const assertInt32 = (m, label) => {
+      if (typeof m !== 'number' || !Number.isInteger(m) || m < -0x80000000 || m > 0x7fffffff) {
+        throw (label + ':bad int32:' + m)
+      }
+    }
     const callEnc = (func, cstr, pub, m) => {
+      assertInt32(m, 'enc')
       const c = new cstr()
       const stack = mod.stackSave()
       const cPos = c._salloc()
@@ -178,6 +186,7 @@ const setupFactory = (createModule, getRandomValues) => {
       return c
     }
     const callPPKEncWithZkpBin = (func, cstr, pubPos, m) => {
+      assertInt32(m, 'encWithZkpBin')
       const c = new cstr()
       const zkp = new exports.ZkpBin()
       const stack = mod.stackSave()
@@ -198,6 +207,8 @@ const setupFactory = (createModule, getRandomValues) => {
       return r
     }
     const callPPKEncWithZkpSet = (func, cstr, pubPos, m, mVec) => {
+      assertInt32(m, 'encWithZkpSet')
+      mVec.forEach(v => assertInt32(v, 'encWithZkpSet:mVec'))
       const mSize = mVec.length
       const c = new cstr()
       const zkp = new exports.ZkpSet(mSize)
@@ -215,6 +226,7 @@ const setupFactory = (createModule, getRandomValues) => {
       return [c, zkp]
     }
     const callPPKEnc = (func, cstr, ppub, m) => {
+      assertInt32(m, 'enc')
       const c = new cstr()
       const stack = mod.stackSave()
       const cPos = c._salloc()
@@ -726,6 +738,7 @@ const setupFactory = (createModule, getRandomValues) => {
 
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpBinEq (m, rh = undefined) {
+        assertInt32(m, 'encWithZkpBinEq')
         return withRandHistory(rh, () => {
           const c1 = new exports.CipherTextG1()
           const c2 = new exports.CipherTextG2()
@@ -764,6 +777,7 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       // return [EncG1(m), EncG2(m), Zkp]
       encWithZkpEq (m, rh = undefined) {
+        assertInt32(m, 'encWithZkpEq')
         return withRandHistory(rh, () => {
           const c1 = new exports.CipherTextG1()
           const c2 = new exports.CipherTextG2()
@@ -841,6 +855,7 @@ const setupFactory = (createModule, getRandomValues) => {
         return r === 1
       }
       verifyZkpDec (c, zkp, m) {
+        assertInt32(m, 'verifyZkpDec')
         if (!exports.CipherTextG1.prototype.isPrototypeOf(c)) {
           throw ('verifyZkpDec:bad type')
         }
@@ -1024,6 +1039,7 @@ const setupFactory = (createModule, getRandomValues) => {
         if (!exports.CipherTextGT.prototype.isPrototypeOf(c)) {
           throw ('verify:bad c')
         }
+        assertInt32(m, 'verify')
         const stack = mod.stackSave()
         const auxPos = this._sallocAndCopy()
         const cPos = c._sallocAndCopy()
@@ -1141,6 +1157,7 @@ const setupFactory = (createModule, getRandomValues) => {
       } else {
         throw ('exports.mulInt:not supported')
       }
+      assertInt32(y, 'mulInt')
       const stack = mod.stackSave()
       const zPos = z._salloc()
       const xPos = x._sallocAndCopy()
