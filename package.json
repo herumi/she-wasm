@@ -9,6 +9,7 @@
     "build:she_c.js": "cd src && make",
     "build:browser": "cd browser && pnpm install && pnpm webpack",
     "test": "node test/test.js",
+    "bench": "node test/bench.js",
     "update-all": "pnpm update && pnpm --dir browser update"
   },
   "repository": {
