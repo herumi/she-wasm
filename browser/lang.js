@@ -13,12 +13,18 @@
   document.documentElement.setAttribute('lang', lang)
 })()
 
+function currentLang () {
+  return document.documentElement.getAttribute('data-lang')
+}
+
 function toggleLang () {
-  const lang = document.documentElement.getAttribute('data-lang') === 'ja' ? 'en' : 'ja'
+  const lang = currentLang() === 'ja' ? 'en' : 'ja'
   document.documentElement.setAttribute('data-lang', lang)
   document.documentElement.setAttribute('lang', lang)
   try {
     localStorage.setItem('lang', lang)
   } catch (e) {
   }
+  // pages that build text from JS listen to this and re-render
+  document.dispatchEvent(new CustomEvent('langchange', { detail: lang }))
 }

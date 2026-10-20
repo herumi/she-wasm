@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Cross Tabulation demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="cross-demo.css">
   <style>
   html[data-lang="en"] .ja { display: none }
@@ -13,7 +13,11 @@
   </style>
   <script src="lang.js"></script>
   <script src="she.js"></script>
-  <script src="cross-demo.js"></script>
+  <script src="cross-schema.js"></script>
+  <script src="cross-user.js"></script>
+  <script src="cross-cloud.js"></script>
+  <script src="cross-analyst.js"></script>
+  <script src="cross-ui.js"></script>
 </head>
 
 <body>
@@ -21,124 +25,150 @@
   <div class="designportal-advanced">
     <h1 class="cross-h1"><span class="en">level 2 homomorphic encryption</span><span class="ja">暗号化したまま計算できる暗号技術</span></h1>
     <h2 class="cross-h2"><span class="en">Cross Tabulation demo</span><span class="ja">クロス集計デモ</span></h2>
-    <p class="cross-status">status : <span class="cross-status-span" name="status">initializing...</span></p>
-    <button class="cross-button" type="button" onclick="clearTable()"><span class="en">clear table</span><span class="ja">テーブルクリア</span></button>
+    <p class="cross-status">status : <span class="cross-status-span" id="status"><span class="en">initializing...</span><span class="ja">初期化中...</span></span></p>
+
+    <ol class="cross-steps">
+      <li id="step1" class="cross-step cross-step--active">1. <span class="en">supply data</span><span class="ja">データ提供</span></li>
+      <li id="step2" class="cross-step">2. <span class="en">encrypted aggregation</span><span class="ja">秘匿集計</span></li>
+      <li id="step3" class="cross-step">3. <span class="en">decryption</span><span class="ja">復号</span></li>
+    </ol>
+
+    <p class="cross-note cross-trust">
+      <span class="en">The cloud has no secret key, so it can read neither the individual records nor the aggregate. The analyst has the secret key but receives nothing from the cloud except the aggregated ciphertexts.</span>
+      <span class="ja">クラウドは秘密鍵を持たないので個票も集計結果も読めない。アナリストは秘密鍵を持つが、クラウドからは集計後の暗号文しか受け取らない。</span>
+    </p>
+
     <div class="advanced-container">
 
       <div id="tabs" class="advanced-tab-container">
-        <button role="tab" class="advanced-tab advanced-tab--active" type="button" aria-expanded="true"><span class="en">data supplier</span><span class="ja">データ提供者</span></button>
-        <button role="tab" class="advanced-tab" type="button" aria-expanded="false"><span class="en">computing server</span><span class="ja">代理秘匿計算サーバ</span></button>
-        <button role="tab" class="advanced-tab" type="button" aria-expanded="false"><span class="en">decryption client</span><span class="ja">復号クライアント</span></button>
+        <button role="tab" class="advanced-tab advanced-tab--active" type="button" aria-expanded="true"><span class="en">user (data supplier)</span><span class="ja">ユーザ（データ提供者）</span></button>
+        <button role="tab" class="advanced-tab" type="button" aria-expanded="false"><span class="en">cloud (computing server)</span><span class="ja">クラウド（代理秘匿計算）</span></button>
+        <button role="tab" class="advanced-tab" type="button" aria-expanded="false"><span class="en">analyst (data analyst)</span><span class="ja">アナリスト（データ解析者）</span></button>
       </div>
 
       <div class="advanced-panel-container">
+
+        <!-- panel 1 : the data supplier -->
         <div class="advanced-panel-contents advanced-panel-contents--active">
           <div class="cross-panel-wrap">
-            <div class="cross-header">
-              <h3><span class="en">set data</span><span class="ja">データをセット</span></h3>
-              <button class="cross-button" type="button" onclick="appendRand()"><span class="en">append randomly</span><span class="ja">プリセットを追加</span></button>
-              <div class="cross-add-xy-box">
-                <button class="cross-button" type="button" onclick="append()"><span class="en">append "x,y"</span><span class="ja">"x"と"y"を追加</span></button>
-                <input class="cross-add-xy" type="text" name="append" value="1,1">
-              </div>
-            </div>
+            <h3><span class="en">set data</span><span class="ja">データをセット</span> <span class="cross-count" id="user-count"></span></h3>
             <h4><span class="en">public key</span><span class="ja">公開鍵</span></h4>
-            <span name="pub" class="hex cross-key"></span>
-              <table summary="client_table">
-                <thead>
-                  <tr id="client_header">
-                    <th>x
-                    <th>y
-                    <th class="hex">Enc(x)
-                    <th class="hex">Enc(y)
-                  </tr>
-                </thead>
-                <tbody id="client_table">
-                </tbody>
-              </table>
+            <span id="pub-key" class="hex cross-key"></span>
+
+            <div id="add-form" class="cross-form"></div>
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="add-one"><span class="en">add this record</span><span class="ja">この内容で追加</span></button>
+              <button class="cross-button" type="button" id="add-10"><span class="en">add 10 random users</span><span class="ja">ランダムに 10 人追加</span></button>
+              <button class="cross-button" type="button" id="add-30"><span class="en">add 30 random users</span><span class="ja">ランダムに 30 人追加</span></button>
+              <button class="cross-button" type="button" id="clear-all"><span class="en">clear all</span><span class="ja">全消去</span></button>
+            </div>
+
+            <p class="cross-note" id="user-empty"></p>
+            <table summary="user_table">
+              <thead>
+                <tr>
+                  <th><span class="en">age</span><span class="ja">年齢</span>
+                  <th><span class="en">site</span><span class="ja">拠点</span>
+                  <th><span class="en">attendance</span><span class="ja">出社率</span>
+                  <th><span class="en">gender</span><span class="ja">性別</span>
+                  <th><span class="en">health score</span><span class="ja">健やか度</span>
+                  <th id="user-enc-head" hidden><span class="en">ciphertext (head of age)</span><span class="ja">暗号文（年齢の先頭）</span>
+                </tr>
+              </thead>
+              <tbody id="user-table"></tbody>
+            </table>
+
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="send"><span class="en">encrypt and send to the cloud</span><span class="ja">暗号化してクラウドに送る</span></button>
+              <progress id="user-progress" value="0" max="1"></progress>
+            </div>
+            <p class="cross-note" id="send-info"></p>
+            <p class="cross-note">
+              <span class="en">For each user, the 4 categorical attributes are one-hot encoded into 17 bits and encrypted in both G1 and G2, and the health score is also encrypted in G1 and G2: 36 ciphertexts (3456 bytes) in total. The cloud receives only data like the rightmost column; the plaintext on the left never leaves the user.</span>
+              <span class="ja">1 人あたり、4 個のカテゴリ属性を one-hot にした 17 ビットを G1 と G2 の両方で、健やか度も G1 と G2 で暗号化する。計 36 個の暗号文（3456 バイト）を送る。クラウドに渡るのは右端の列のようなデータだけで、左側の平文は渡らない。</span>
+            </p>
           </div>
         </div>
 
+        <!-- panel 2 : the computing server -->
         <div class="advanced-panel-contents">
-          <div class="cross-panel-double-wrap">
-            <div class="cross-panel-wrap">
-              <div class="cross-header">
-                <h3><span class="en">receive ciphertexts</span><span class="ja">暗号文をサーバー側で受信</span></h3>
-                <button class="cross-button" type="button" onclick="send()"><span class="en">exec</span><span class="ja">実行</span></button>
-              </div>
-              <table summary="server_table">
-                <thead>
-                  <tr id="server_header">
-                    <th class="hex">Enc(x)
-                    <th class="hex">Enc(y)
-                    <th class="hex">Enc(xy)
-                  </tr>
-                </thead>
-                <tbody id="server_table">
-                </tbody>
-              </table>
+          <div class="cross-panel-wrap">
+            <h3><span class="en">received ciphertexts</span><span class="ja">受信した暗号文</span> <span class="cross-count" id="cloud-count"></span></h3>
+            <p class="cross-note"><span class="en">query from the analyst</span><span class="ja">アナリストからの指示</span> : <span id="query-label-cloud"></span></p>
+            <p class="cross-note" id="cloud-empty"></p>
+            <table summary="cloud_table">
+              <thead>
+                <tr>
+                  <th>Enc(<span class="en">age</span><span class="ja">年齢</span>)
+                  <th>Enc(<span class="en">site</span><span class="ja">拠点</span>)
+                  <th>Enc(<span class="en">attendance</span><span class="ja">出社率</span>)
+                  <th>Enc(<span class="en">gender</span><span class="ja">性別</span>)
+                  <th>Enc(<span class="en">health score</span><span class="ja">健やか度</span>)
+                </tr>
+              </thead>
+              <tbody id="cloud-table"></tbody>
+            </table>
+            <p class="cross-note">
+              <span class="en">Each cell shows the head of the first ciphertext of the one-hot vector. The cloud cannot recover the plaintext from these.</span>
+              <span class="ja">各セルは one-hot ベクトルの先頭 1 個分の抜粋。クラウドはこれらを平文に戻せない。</span>
+            </p>
+          </div>
+
+          <div class="cross-panel-wrap">
+            <h3><span class="en">aggregate on ciphertexts</span><span class="ja">暗号化したまま集計</span></h3>
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="aggregate"><span class="en">aggregate and send to the analyst</span><span class="ja">集計してアナリストに送る</span></button>
+              <progress id="cloud-progress" value="0" max="1"></progress>
             </div>
-            <div class="cross-panel-wrap">
-              <div class="cross-header">
-                <h3><span class="en">aggregate</span><span class="ja">暗号文のまま集計</span></h3>
-                <button class="cross-button" type="button" onclick="mulSum()"><span class="en">exec</span><span class="ja">実行</span></button>
-              </div>
-              <h4><span class="en">results</span><span class="ja">集計結果</span></h4>
-              <div>
-                <span>ΣEnc(xi) : </span><span name="encXsumS"></span>
-              </div>
-              <div>
-                <span>ΣEnc(yi) : </span><span name="encYsumS"></span>
-              </div>
-              <div>
-                <span>ΣEnc(xi yi) : </span><span name="encSumS"></span>
-              </div>
-            </div>
+            <p class="cross-note" id="cloud-info"></p>
+            <div id="cloud-result"></div>
           </div>
         </div>
 
-
+        <!-- panel 3 : the analyst -->
         <div class="advanced-panel-contents">
-          <div class="cross-panel-double-wrap">
-            <div class="cross-panel-wrap">
-              <div class="cross-header">
-                <h3><span class="en">receive aggregation</span><span class="ja">クライアント側で受信</span></h3>
-                <button class="cross-button" type="button" onclick="recv()"><span class="en">exec</span><span class="ja">実行</span></button>
-              </div>
-              <h4><span class="en">secret key</span><span class="ja">秘密鍵</span></h4>
-              <span name="sec" class="hex cross-key"></span>
+          <div class="cross-panel-wrap">
+            <h3><span class="en">keys and the query</span><span class="ja">鍵と集計の指示</span></h3>
+            <h4><span class="en">secret key</span><span class="ja">秘密鍵</span></h4>
+            <span id="sec-key" class="hex cross-key"></span>
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="regen-key"><span class="en">regenerate the keys</span><span class="ja">鍵を作り直す</span></button>
+            </div>
 
-              <h4><span class="en">results</span><span class="ja">暗号文の計算結果</span></h4>
-              <div>
-                <span>ΣEnc(xi) :</span><span name="encXsumC"></span>
-              </div>
-              <div>
-                <span>ΣEnc(yi) :</span><span name="encYsumC"></span>
-              </div>
-              <div>
-                <span>ΣEnc(xi yi) :</span><span name="encSumC"></span>
-              </div>
+            <div class="cross-form">
+              <label class="cross-field">
+                <input type="radio" name="mode" id="mode-cross" value="cross" checked><span class="en">cross tabulation</span><span class="ja">クロス集計</span>
+              </label>
+              <label class="cross-field">
+                <input type="radio" name="mode" id="mode-mean" value="mean"><span class="en">mean</span><span class="ja">平均</span>
+              </label>
+              <label class="cross-field">
+                <span class="cross-field-name"><span class="en">attribute A</span><span class="ja">属性 A</span></span>
+                <select id="key-a"></select>
+              </label>
+              <label class="cross-field" id="key-b-field">
+                <span class="cross-field-name"><span class="en">attribute B</span><span class="ja">属性 B</span></span>
+                <select id="key-b"></select>
+              </label>
+              <span class="cross-field" id="key-b-fixed" hidden>
+                <span class="cross-field-name"><span class="en">attribute B</span><span class="ja">属性 B</span></span><span class="en">health score (fixed)</span><span class="ja">健やか度（固定）</span>
+              </span>
             </div>
-            <div class="cross-panel-wrap">
-              <div class="cross-header">
-                <h3><span class="en">decrypt</span><span class="ja">復号する</span></h3>
-                <button class="cross-button" type="button" onclick="dec()"><span class="en">exec</span><span class="ja">実行</span></button>
-              </div>
-              <h4><span class="en">cross tabulation</span><span class="ja">集計結果</span></h4>
-                  <table summary="cross_table">
-                    <thead>
-                      <tr id="cross_header">
-                        <th>
-                        <th>#{x=0}
-                        <th>#{x=1}
-                        <th>#x
-                      </tr>
-                    </thead>
-                    <tbody id="cross_table"></tbody>
-                  </table>
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="set-query"><span class="en">send the query to the cloud</span><span class="ja">クラウドに指示を出す</span></button>
             </div>
+            <p class="cross-note"><span class="en">current query</span><span class="ja">現在の指示</span> : <span id="query-label"></span></p>
+          </div>
+
+          <div class="cross-panel-wrap">
+            <h3><span class="en">receive and decrypt</span><span class="ja">受信と復号</span></h3>
+            <div class="cross-buttons">
+              <button class="cross-button" type="button" id="decrypt"><span class="en">receive the result and decrypt</span><span class="ja">結果を受信して復号</span></button>
+            </div>
+            <div id="analyst-result"></div>
           </div>
         </div>
+
       </div>
     </div>
   </div>

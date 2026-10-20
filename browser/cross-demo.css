@@ -32,14 +32,6 @@ input {
   margin: 8px;
 }
 
-.cross-add-xy-box {
-  display: flex;
-}
-
-.cross-add-xy {
-  width: 64px;
-}
-
 .cross-key {
   border: solid 1px #ccc;
   height: 32px;
@@ -74,11 +66,6 @@ input {
   margin-left: 8px;
 }
 
-.cross-panel-double-wrap {
-  width: 100%;
-  display: flex;
-}
-
 .cross-panel-wrap {
   margin: 8px;
   width: auto;
@@ -87,26 +74,11 @@ input {
   min-height: 200px
 }
 
-.cross-header {
-  display: flex;
-}
-
-.cross-panel-double-wrap div {
-  width: 100%;
-}
-
 @media screen and (max-width: 1024px) {
   span {
     max-width: 70vw;
   }
 
-  .cross-panel-double-wrap {
-    display: block;
-  }
-
-  .cross-panel-double-wrap div {
-    width: auto;
-  }
 }
 
 @media screen and (max-width: 576px) {
@@ -135,9 +107,6 @@ input {
     padding: 8px;
   }
 
-  .cross-header {
-    display: block;
-  }
 }
 
  body, h1,
@@ -288,3 +257,149 @@ input {
      /* font-size: 2rem; */
    }
  }
+
+/* ---- cross tabulation demo ---- */
+
+/* An author rule such as .cross-field { display: flex } beats the browser's
+   own [hidden] { display: none }, so the hidden attribute needs !important to
+   work on an element that this file gives a display to. */
+[hidden] {
+  display: none !important;
+}
+
+.cross-steps {
+  display: flex;
+  list-style: none;
+  gap: 8px;
+  margin: 8px 0 8px 8px;
+}
+
+.cross-step {
+  padding: 4px 12px;
+  border: solid 1px #999;
+  border-radius: 3px;
+  background: #ececec;
+  color: #666;
+}
+
+.cross-step--active {
+  background: #333;
+  border-color: #333;
+  color: #fff;
+}
+
+.cross-trust {
+  margin: 0 8px 16px 8px;
+  max-width: 60em;
+}
+
+.cross-note {
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.cross-count {
+  font-size: 0.9rem;
+  font-weight: normal;
+  margin-left: 12px;
+  color: #555;
+}
+
+.cross-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 8px 0;
+}
+
+.cross-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cross-field-name {
+  color: #555;
+  font-size: 0.9rem;
+  max-width: none;
+}
+
+.cross-health-value {
+  width: 3em;
+  max-width: none;
+  text-align: right;
+}
+
+.cross-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.cross-button:disabled {
+  background: #bbb;
+  border-color: #bbb;
+  cursor: default;
+}
+
+.cross-button:disabled:hover {
+  background: #bbb;
+}
+
+progress {
+  width: 200px;
+  margin: 8px;
+}
+
+.hex {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #777;
+  word-break: break-all;
+}
+
+.cross-hex-table td {
+  max-width: none;
+}
+
+.cross-result-table {
+  table-layout: auto;
+  width: auto;
+  min-width: 50%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.cross-result-table th,
+.cross-result-table td {
+  border: solid 1px #bbb;
+  padding: 4px 12px;
+  text-align: right;
+  max-width: none;
+}
+
+.cross-result-table thead th,
+.cross-result-table tbody th {
+  background: #ececec;
+  text-align: left;
+  font-weight: normal;
+}
+
+/* cells decrypted directly from a CipherTextGT */
+.cross-direct {
+  background: #dbeaf7;
+}
+
+/* cells that would expose one or two individuals */
+.cross-small {
+  color: #aaa;
+}
+
+.cross-margin {
+  background: #f0f0f0;
+  color: #444;
+}
