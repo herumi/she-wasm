@@ -4,6 +4,14 @@ span {
   overflow: hidden;
 }
 
+/* The en / ja spans only switch the language (cross-demo.html hides one of them):
+   they must flow like plain text, or headings and notes wrap at 30vw. */
+span.en, span.ja {
+  max-width: none;
+  display: inline;
+  overflow: visible;
+}
+
 thead {
   background-color: #e3e3e3;
 }
@@ -290,7 +298,6 @@ input {
 
 .cross-trust {
   margin: 0 8px 16px 8px;
-  max-width: 60em;
 }
 
 .cross-note {
